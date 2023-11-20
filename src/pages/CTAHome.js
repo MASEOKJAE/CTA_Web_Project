@@ -202,6 +202,33 @@ export default function DashboardAppPage() {
             });
     }, []);
 
+
+    // 이미지 검출 결과 상시 확인
+    useEffect(() => {
+        const fetchColorDetectResult = async () => {
+            try {
+                // Fetch color detect result from the server
+                const response = await axios.get('/api/colorDetectResult');
+                const { result } = response.data;
+                
+                console.log("제발!!!! -> " + result);
+    
+                // If the result is 1, show an alert
+                if (result === '1') {
+                    alert('설비에 문제가 발생했습니다!!');
+                }
+            } catch (error) {
+                console.error('Error fetching color detect result:', error);
+            }
+        };
+    
+        // Call the function every 5 seconds
+        const intervalId = setInterval(fetchColorDetectResult, 5000);
+    
+        // Clear interval on component unmount
+        return () => clearInterval(intervalId);
+    }, []);
+
     return (
         <>
             <Helmet>

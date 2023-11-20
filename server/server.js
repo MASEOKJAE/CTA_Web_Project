@@ -1,31 +1,53 @@
-// server.js
-
 const express = require('express');
 const cors = require('cors');
 const db = require('./db');
+const chokidar = require('chokidar');
+const { exec } = require('child_process');
 const app = express();
 const PORT = process.env.PORT || 4001;
 const bodyParser = require('body-parser');
 
-// CORS 허용 설정
-// const corsOptions = {
-//     origin: 'http://13.125.227.132:3000',
-//     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-//     optionsSuccessStatus: 204,
-//     credentials: true, // 인증 정보 (쿠키, HTTP 인증)를 포함하려면 true로 설정
-//   };
-
-
-
 app.use(cors());
-app.get('/', (req, res)=>{
-    console.log('/root');
-})
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({extended: true}));
+app.use(bodyParser.urlencoded({ extended: true }));
 
+let colorDetectResult = '0'; // colorDetect.py의 결과를 저장할 변수를 선언합니다.
 
-console.log('여기 지나가는지 확인 111');
+const watcher = chokidar.watch('/home/ubuntu/WorkSpace/CTA_Web_Project/public/assets/pimage', {
+  ignored: /(^|[\/\\])\../, // ignore dotfiles
+  persistent: true
+});
+
+watcher
+  .on('add', path => {
+    console.log(`File ${path} has been added`);
+
+    const command = `python3 /home/ubuntu/WorkSpace/CTA_Web_Project/public/test/colorDetect.py ${path}`;
+    exec(command, (error, stdout, stderr) => {
+      if (error) {
+        console.log(`Error: ${error.message}`);
+        return;
+      }
+      if (stderr) {
+        console.log(`Stderr: ${stderr}`);
+        return;
+      }
+      console.log(`Stdout: ${stdout}`);
+      colorDetectResult = stdout.trim(); // Python 스크립트의 결과를 저장하고 줄바꿈 문자를 제거합니다.
+    });
+  })
+  .on('error', error => console.log(`Watcher error: ${error}`));
+
+// 라우트 설정
+app.get('/api/colorDetectResult', (req, res) => {
+  res.send({ result: colorDetectResult });
+});
+
+app.get('/', (req, res) => {
+  console.log('/root');
+});
+
+console.log('colorDetect 상태 관리 통과!!!');
 
 // MySQL 연결 확인
 db.connect((err) => {
@@ -54,19 +76,19 @@ app.get('/api/equipment', (req, res) => {
 
 // 라우트 설정 (설비 추가)
 app.post('/api/equipment', (req, res) => {
-    const { code, name, installationDate, location } = req.body;
-  
-    const sql = 'INSERT INTO equipment (code, name, installationDate, location) VALUES (?, ?, ?, ?)';
-  
-    db.query(sql, [code, name, installationDate, location], (err, result) => {
-      if (!err) {
-        res.send({ message: 'Equipment added successfully', result });
-      } else {
-        console.error('Error adding equipment:', err);
-        res.status(500).send('Internal Server Error');
-      }
-    });
+  const { code, name, installationDate, location } = req.body;
+
+  const sql = 'INSERT INTO equipment (code, name, installationDate, location) VALUES (?, ?, ?, ?)';
+
+  db.query(sql, [code, name, installationDate, location], (err, result) => {
+    if (!err) {
+      res.send({ message: 'Equipment added successfully', result });
+    } else {
+      console.error('Error adding equipment:', err);
+      res.status(500).send('Internal Server Error');
+    }
   });
+});
 
 
 app.post('/api/equipment/:id', (req, res) => {
@@ -75,20 +97,20 @@ app.post('/api/equipment/:id', (req, res) => {
   const installationDate = req.body.installationDate;
   const location = req.body.location;
 
-  db.query("UPDATE equipment SET id = ?, name = ?, installationDate = ?, location = ? WHERE id = ?", 
-      [equipmentId, name, installationDate, location], function(err, rows, fields) {
+  db.query("UPDATE equipment SET id = ?, name = ?, installationDate = ?, location = ? WHERE id = ?",
+    [equipmentId, name, installationDate, location], function (err, rows, fields) {
       if (!err) {
-          console.log("DB 수정 성공!!!");
-          res.sendStatus(200);
+        console.log("DB 수정 성공!!!");
+        res.sendStatus(200);
       } else {
-          console.log("DB 수정 실패…")
-          console.log(err);
-          res.sendStatus(500);
+        console.log("DB 수정 실패…")
+        console.log(err);
+        res.sendStatus(500);
       }
-  });
+    });
 });
 
-  
+
 // 라우트 설정 (설비 삭제)
 app.delete('/api/equipment/:id', (req, res) => {
   const equipmentID = req.params.id;
@@ -106,29 +128,29 @@ app.delete('/api/equipment/:id', (req, res) => {
 });
 
 // 라우트 설정 (설비 수정)
-// app.put('/api/equipment/:id', (req, res) => {
-//   const equipmentId = parseFloat(req.params.id);
-//   const name = req.body.name;
-//   const installationDate = req.body.installationDate;
-//   const location = req.body.location;
+app.put('/api/equipment/:id', (req, res) => {
+  const equipmentId = parseFloat(req.params.id);
+  const name = req.body.name;
+  const installationDate = req.body.installationDate;
+  const location = req.body.location;
 
-//   // Review your database update logic here...
+  // Review your database update logic here...
 
-//   db.query(
-//     "UPDATE equipment SET id = ?, name = ?, installationDate = ?, location = ? WHERE id = ?",
-//     [equipmentId, name, installationDate, location, equipmentId],
-//     function (err, rows, fields) {
-//       if (!err) {
-//         console.log("DB 수정 성공!!!");
-//         res.sendStatus(200);
-//       } else {
-//         console.log("DB 수정 실패…");
-//         console.log(err);
-//         res.sendStatus(500);
-//       }
-//     }
-//   );
-// });
+  db.query(
+    "UPDATE equipment SET id = ?, name = ?, installationDate = ?, location = ? WHERE id = ?",
+    [equipmentId, name, installationDate, location, equipmentId],
+    function (err, rows, fields) {
+      if (!err) {
+        console.log("DB 수정 성공!!!");
+        res.sendStatus(200);
+      } else {
+        console.log("DB 수정 실패…");
+        console.log(err);
+        res.sendStatus(500);
+      }
+    }
+  );
+});
 
 // Add a new endpoint to fetch images for a specific repair history
 app.get('/api/equipment/:id/repair-history/images', (req, res) => {
