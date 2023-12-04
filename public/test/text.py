@@ -2,64 +2,59 @@ import cv2
 import numpy as np
 from PIL import Image
 import pytesseract
-import re
+
+def unsharp_mask(image, sigma=1.0, strength=1.5):
+    blurred = cv2.GaussianBlur(image, (0, 0), sigma)
+    sharpened = cv2.addWeighted(image, 1.0 + strength, blurred, -strength, 0)
+    return sharpened
 
 def find_and_extract_characters(image_path, output_folder):
-    # 이미지 읽기
+    # Read the image
     image = cv2.imread(image_path)
     
-    # 이미지를 그레이스케일로 변환
-    # gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # Convert the image to grayscale
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     
-    # 가우시안 블러 적용 (노이즈 감소)
-    blurred = cv2.GaussianBlur(image, (5, 5), 0)
+    # Apply unsharp masking for enhanced sharpness
+    sharpened = unsharp_mask(gray)
     
-    # 캐니 에지 검출
+    # Apply Gaussian blur to reduce noise
+    blurred = cv2.GaussianBlur(sharpened, (5, 5), 0)
+    
+    # Apply Canny edge detection
     edges = cv2.Canny(blurred, 50, 150)
     
-    # 윤곽선 찾기
+    # Find contours
     contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
-    # 전체 텍스트를 저장할 변수 초기화
-    total_text = ""
+    # Find the largest contour
+    max_contour = max(contours, key=cv2.contourArea)
     
-    # 각 윤곽선에 대해 글자 그리기 및 추출
-    for contour in contours:
-        # 글자의 좌표 구하기
-        x, y, w, h = cv2.boundingRect(contour)
-        
-        # 이미지에서 글자 추출
-        character = image[y+20:y+h-20, x+30:x+w-30]
-        
-        # 추출된 글자 이미지 저장
-        character_path = f"{output_folder}/character_{x}_{y}.png"
-        cv2.imwrite(character_path, character)
-        
-        # 사각형을 빨간색으로 표시
-        cv2.rectangle(image, (x, y), (x+w, y+h), (0, 0, 255), 2)
-        
-        # 글자에서 텍스트 추출
-        
-        
-        # # 추출된 텍스트에서 문자와 숫자만 추출
-        # text = re.findall('\w+', text)
-        # text = ' '.join(text)
-        
-        # # 추출된 텍스트를 전체 텍스트에 추가
-        # total_text += text
-
-    # 사각형 밖의 흰색 부분을 사각형 색깔과 같게 변경
-    # image[image == 255] = 0
-
-    # 결과 이미지 저장
+    # Get the coordinates of the bounding rectangle around the text
+    x, y, w, h = cv2.boundingRect(max_contour)
+    
+    # Draw a red rectangle around the text region on the original color image
+    cv2.rectangle(image, (x, y), (x+w, y+h), (0, 0, 255), 2)
+    
+    # Extract the text region from the grayscale image
+    character = gray[y:y+h, x:x+w]
+    
+    # Save the extracted text region
+    character_path = f"{output_folder}/character_{x}_{y}.png"
+    cv2.imwrite(character_path, character)
+    
+    # Extract text from the grayscale character region
     text = pytesseract.image_to_string(Image.open(character_path))
     
-    # 전체 텍스트 출력
-    print(f"Extracted text: {total_text}")
+    # Save the result image (with the red rectangle)
+    cv2.imwrite(f"{output_folder}/result_image.png", image)
+    
+    # Print the extracted text
+    print(f"Extracted text: {text}")
 
-# 이미지 파일 경로와 결과를 저장할 폴더 지정
-image_path = "../assets/pimage/ex5.jpg"
+# Specify the image file path and the folder to save results
+image_path = "../assets/pimage/photo_2023_11_28_02:18:11.jpg"
 output_folder = "./result"
 
-# 함수 호출
+# Call the function
 find_and_extract_characters(image_path, output_folder)

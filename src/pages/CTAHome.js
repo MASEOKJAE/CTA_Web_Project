@@ -216,6 +216,7 @@ export default function DashboardAppPage() {
                 // If the result is 1, show an alert
                 if (result === '1') {
                     alert('설비에 문제가 발생했습니다!!');
+                    await axios.put('/api/colorDetectResult/reset');
                 }
             } catch (error) {
                 console.error('Error fetching color detect result:', error);
@@ -228,6 +229,35 @@ export default function DashboardAppPage() {
         // Clear interval on component unmount
         return () => clearInterval(intervalId);
     }, []);
+
+        // 이미지 검출 결과 상시 확인
+        // useEffect(() => {
+        //     const fetchColorDetectResult = async () => {
+        //         try {
+        //             // Fetch color detect result from the server
+        //             const response = await axios.get('/api/colorDetectResult');
+        //             const { result } = response.data;
+        
+        //             // If the result is 1, show an alert
+        //             if (result === '1') {
+        //                 // Show a confirmation dialog and check the user's response
+        //                 if (window.confirm('설비에 문제가 발생했습니다!!')) {
+        //                     // If the user clicked 'OK', send a request to the server
+        //                     axios.post('/api/colorDetectResult/reset');
+        //                 }
+        //             }
+        //         } catch (error) {
+        //             console.error('Error fetching color detect result:', error);
+        //         }
+        //     };
+        
+        //     // Call the function every 5 seconds
+        //     const intervalId = setInterval(fetchColorDetectResult, 5000);
+        
+        //     // Clear interval on component unmount
+        //     return () => clearInterval(intervalId);
+        // }, []);  
+    
 
     return (
         <>

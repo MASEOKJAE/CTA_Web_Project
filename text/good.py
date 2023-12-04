@@ -13,46 +13,32 @@ def find_and_extract_characters(image_path, output_folder):
     # 가우시안 블러 적용 (노이즈 감소)
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
     
-    # 캐니 에지 검출
-    edges = cv2.Canny(blurred, 50, 150)
+    # 이미지 이진화 (검은색 테두리 추출)
+    _, binary = cv2.threshold(blurred, 100, 255, cv2.THRESH_BINARY_INV)
     
     # 윤곽선 찾기
-    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
-    # 전체 텍스트를 저장할 변수 초기화
-    total_text = ""
+    # 가장 큰 윤곽선 찾기
+    largest_contour = max(contours, key=cv2.contourArea)
     
-    # 각 윤곽선에 대해 글자 그리기 및 추출
-    for contour in contours:
-        # 글자의 좌표 구하기
-        x, y, w, h = cv2.boundingRect(contour)
-        
-        # 이미지에서 글자 추출
-        character = gray[y:y+h, x:x+w]
-        
-        # 추출된 글자 이미지 저장
-        character_path = f"{output_folder}/character_{x}_{y}.png"
-        cv2.imwrite(character_path, character)
-        
-        # 사각형을 빨간색으로 표시
-        cv2.rectangle(image, (x, y), (x+w, y+h), (0, 0, 255), 2)
-        
-        # 글자에서 텍스트 추출
-        text = pytesseract.image_to_string(Image.open(character_path))
-        
-        # 추출된 텍스트를 전체 텍스트에 추가
-        total_text += text
+    # 윤곽선에 따라 이미지 잘라내기
+    x, y, w, h = cv2.boundingRect(largest_contour)
+    cropped = gray[y:y+h, x:x+w]
+    
+    # 잘라낸 이미지 저장
+    cropped_path = f"{output_folder}/cropped.png"
+    cv2.imwrite(cropped_path, cropped)
 
-    # 결과 이미지 저장
-    cv2.imwrite(f"{output_folder}/result_image.png", image)
+    # 잘라낸 이미지에서 텍스트 추출
+    total_text = pytesseract.image_to_string(Image.open(cropped_path))
     
     # 전체 텍스트 출력
     print(f"Extracted text: {total_text}")
 
 # 이미지 파일 경로와 결과를 저장할 폴더 지정
-image_path = "./green.png"
+image_path = "../public/assets/pimage/photo_2023_11_21_13:36:05.jpg"
 output_folder = "./result"
 
 # 함수 호출
 find_and_extract_characters(image_path, output_folder)
-
