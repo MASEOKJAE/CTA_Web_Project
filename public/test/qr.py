@@ -44,4 +44,4 @@ if len(sys.argv) > 1:
 if qr_code_data:
     print(qr_code_data[0])
 else:
-    print("No QR Code provided")
+    print("No QR Code image provided")

@@ -19,53 +19,6 @@ const watcher = chokidar.watch('/home/ubuntu/WorkSpace/CTA_Web_Project/public/as
   persistent: true
 });
 
-// watcher
-//   .on('add', path => {
-//     console.log(`File ${path} has been added`);
-
-//     const command1 = `python3 /home/ubuntu/WorkSpace/CTA_Web_Project/public/test/colorDetect.py ${path}`;
-//     exec(command1, (error, stdout, stderr) => {
-//       if (error) {
-//         console.log(`Error: ${error.message}`);
-//         return;
-//       }
-//       if (stderr) {
-//         console.log(`Stderr: ${stderr}`);
-//         return;
-//       }
-//       console.log(`Stdout: ${stdout}`);
-//       colorDetectResult = stdout.trim(); // Python 스크립트의 결과를 저장하고 줄바꿈 문자를 제거
-
-//       // colorDetect.py 실행 후 state 테이블에 데이터 추가
-//       const status = colorDetectResult === '1' ? '점검 필요' : '정상';
-//       const photoName = path.split('/').pop(); // 경로에서 파일 이름만 추출
-//       const sql = 'INSERT INTO state (photoName, status, photoPath) VALUES (?, ?, ?)';
-      
-//       db.query(sql, [photoName, status, path], (err, result) => {
-//         if (err) {
-//           console.error('Error adding state:', err);
-//         } else {
-//           console.log('State added successfully', result);
-//         }
-//       });
-//     });
-
-//     const command2 = `python3 /home/ubuntu/WorkSpace/CTA_Web_Project/public/test/testTest.py ${path}`;
-//     exec(command2, (error, stdout, stderr) => {
-//       if (error) {
-//         console.log(`Error: ${error.message}`);
-//         return;
-//       }
-//       if (stderr) {
-//         console.log(`Stderr: ${stderr}`);
-//         return;
-//       }
-//       console.log(`Stdout: ${stdout}`);
-//       // 필요한 경우, testTest.py의 결과를 저장하는 코드를 여기에 추가하실 수 있습니다.
-//     });
-//   })
-//   .on('error', error => console.log(`Watcher error: ${error}`));
-
   watcher
   .on('add', path => {
     console.log(`File ${path} has been added`);
