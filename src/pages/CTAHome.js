@@ -3,6 +3,7 @@ import { faker } from '@faker-js/faker';
 // @mui
 import { useTheme } from '@mui/material/styles';
 import { React, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 // @mui
 import {
@@ -49,16 +50,15 @@ const TABLE_HEAD = [
     { id: 'company', label: '설비명', alignRight: false },
     { id: 'role', label: '설치일자', alignRight: false },
     { id: 'isVerified', label: '설치위치', alignRight: false },
-    { id: 'status', label: '최신 상태', alignRight: false },
     { id: 'latestInspectionDate', label: '최종 점검일', alignRight: false },
     { id: 'isDefective', label: '수리필요여부', alignRight: false },
     { id: 'repairmentHistory', label: '수리 이력', alignRight: false },
-    { id: 'inspectionHistory', label: '점검 이력', alignRight: false },
+    { id: 'inspectionHistory', label: '설비 상태', alignRight: false },
+    { id: 'qr', label: 'QR code', alignRight: false },
     { id: 'edit', label: '수정', alignRight: false },
     { id: 'delete', label: '삭제', alignRight: false },
 
 ];
-
 
 export default function DashboardAppPage() {
     const theme = useTheme();
@@ -76,6 +76,13 @@ export default function DashboardAppPage() {
     const [equipmentData, setEquipmentData] = useState([]);
 
     const [editRow, setEditRow] = useState(null);
+
+    const navigate = useNavigate();
+
+    const goHistory = () => {
+        navigate("/a_dashboard/a_studentlist");
+        //student_list();
+    };
 
     // 설비추가 다이얼로그 열기
     const handleClickOpenCreate = () => {
@@ -173,22 +180,32 @@ export default function DashboardAppPage() {
         setEditRow(row);
     }
 
-    const [isModalOpen, setModalOpen] = useState(false);
-    const [modalImages, setModalImages] = useState([]);
-    // 수리이력 사진 띄우기
-    // Update your component to fetch and display images
-    const repairPhoto = async (equipmentId) => {
+    // History 페이지로 넘어가기 위해
+    const handleStatusConfirmation = async (equipment) => {
         try {
-            // Fetch images for the specified repair history
-            const response = await axios.get(`/api/equipment/${equipmentId}/repair-history/images`);
-            const { images } = response.data;
+            const response = await axios.get(`/api/state?name=${equipment.code}`);
+            console.log("확인 => " + response);
+            const stateInfo = response.data;
+            console.log("!!!!!!!! 확인 !!!!!!! -> ", stateInfo);
+            if (stateInfo.length > 0) {
+                // useNavigate를 사용하여 History 페이지로 이동
+                navigate('/dashboard/history', { state: { equipment, stateInfo }, replace: true });
 
-            // Display images in the modal
-            setModalImages(images);
-            setModalOpen(true);
+            } else {
+                alert(equipment.name + '에 대한 정보가 존재하지 않습니다.');
+            }
         } catch (error) {
-            console.error('Error fetching repair history images:', error);
+            console.error('Error fetching state information:', error);
         }
+    };
+
+    const [qrCodeImage, setQrCodeImage] = useState('');
+    const [isQrCodeModalOpen, setQrCodeModalOpen] = useState(false);
+
+    const handleQrCodeConfirmation = (code) => {
+        // Set the selected QR code for the modal
+        setQrCodeImage(`/assets/QRcodes/${code}.png`);
+        setQrCodeModalOpen(true);
     };
 
     useEffect(() => {
@@ -202,7 +219,6 @@ export default function DashboardAppPage() {
             });
     }, []);
 
-
     // 이미지 검출 결과 상시 확인
     useEffect(() => {
         const fetchColorDetectResult = async () => {
@@ -210,9 +226,9 @@ export default function DashboardAppPage() {
                 // Fetch color detect result from the server
                 const response = await axios.get('/api/colorDetectResult');
                 const { result } = response.data;
-                
+
                 console.log("제발!!!! -> " + result);
-    
+
                 // If the result is 1, show an alert
                 if (result === '1') {
                     alert('설비에 문제가 발생했습니다!!');
@@ -222,42 +238,13 @@ export default function DashboardAppPage() {
                 console.error('Error fetching color detect result:', error);
             }
         };
-    
+
         // Call the function every 5 seconds
         const intervalId = setInterval(fetchColorDetectResult, 5000);
-    
+
         // Clear interval on component unmount
         return () => clearInterval(intervalId);
     }, []);
-
-        // 이미지 검출 결과 상시 확인
-        // useEffect(() => {
-        //     const fetchColorDetectResult = async () => {
-        //         try {
-        //             // Fetch color detect result from the server
-        //             const response = await axios.get('/api/colorDetectResult');
-        //             const { result } = response.data;
-        
-        //             // If the result is 1, show an alert
-        //             if (result === '1') {
-        //                 // Show a confirmation dialog and check the user's response
-        //                 if (window.confirm('설비에 문제가 발생했습니다!!')) {
-        //                     // If the user clicked 'OK', send a request to the server
-        //                     axios.post('/api/colorDetectResult/reset');
-        //                 }
-        //             }
-        //         } catch (error) {
-        //             console.error('Error fetching color detect result:', error);
-        //         }
-        //     };
-        
-        //     // Call the function every 5 seconds
-        //     const intervalId = setInterval(fetchColorDetectResult, 5000);
-        
-        //     // Clear interval on component unmount
-        //     return () => clearInterval(intervalId);
-        // }, []);  
-    
 
     return (
         <>
@@ -299,14 +286,19 @@ export default function DashboardAppPage() {
                                         <TableCell>{equipment.name}</TableCell>
                                         <TableCell>{new Date(equipment.installationDate).toLocaleString()}</TableCell>
                                         <TableCell>{equipment.location}</TableCell>
-                                        <TableCell align="left">최신상태</TableCell>
+                                        {/* <TableCell align="left">최신상태</TableCell> */}
                                         <TableCell align="left">최종 점검일</TableCell>
                                         <TableCell align="left">불필요</TableCell>
                                         <TableCell align="left">
-                                            <Button variant="text" onClick={() => repairPhoto(equipment.id)}>확인</Button>
-                                            <ImageModal isOpen={isModalOpen} onClose={() => setModalOpen(false)} images={modalImages} />
+                                            <Button variant="text">
+                                                확인
+                                            </Button>
                                         </TableCell>
-                                        <TableCell align="left"><Button variant="text">확인</Button></TableCell>
+                                        <TableCell align="left"><Button variant="text" onClick={() => handleStatusConfirmation(equipment)}>확인</Button></TableCell>
+                                        <TableCell align="left"><Button variant="text" onClick={() => handleQrCodeConfirmation(equipment.code)}>
+                                            확인
+                                        </Button>
+                                        </TableCell>
                                         <TableCell align="left">
                                             <IconButton variant="text" onClick={() => handleOpenEditDialog(equipment)}>
                                                 <Iconify icon={'material-symbols:edit'} />
@@ -320,7 +312,9 @@ export default function DashboardAppPage() {
                                     </TableRow>
                                 ))}
                             </TableBody>
-
+                            {isQrCodeModalOpen && (
+                                <ImageModal isOpen={isQrCodeModalOpen} onClose={() => setQrCodeModalOpen(false)} images={[qrCodeImage]} />
+                            )}
 
                         </Table>
                     </TableContainer>

@@ -1,4 +1,5 @@
 const express = require('express');
+const { spawn } = require('child_process');
 const cors = require('cors');
 const db = require('./db');
 const chokidar = require('chokidar');
@@ -19,7 +20,7 @@ const watcher = chokidar.watch('/home/ubuntu/WorkSpace/CTA_Web_Project/public/as
   persistent: true
 });
 
-  watcher
+watcher
   .on('add', path => {
     console.log(`File ${path} has been added`);
 
@@ -54,7 +55,7 @@ const watcher = chokidar.watch('/home/ubuntu/WorkSpace/CTA_Web_Project/public/as
         const status = colorDetectResult === '1' ? '점검 필요' : '정상';
         const photoName = path.split('/').pop(); // 경로에서 파일 이름만 추출
         const sql = 'INSERT INTO state (name, photoName, status, photoPath) VALUES (?, ?, ?, ?)';
-      
+
         db.query(sql, [mcName, photoName, status, path], (err, result) => {
           if (err) {
             console.error('Error adding state:', err);
@@ -70,6 +71,19 @@ const watcher = chokidar.watch('/home/ubuntu/WorkSpace/CTA_Web_Project/public/as
   })
   .on('error', error => console.log(`Watcher error: ${error}`));
 
+app.post('/runQRpy', (req, res) => {
+  const { code, name, installationDate, location } = req.body;
+
+  const python = spawn('python3', ['/home/ubuntu/WorkSpace/CTA_Web_Project/python_files/qr.py', code]);
+  python.stdout.on('data', (data) => {
+    console.log(`stdout: ${data}`);
+    res.send(data.toString());
+  });
+  python.stderr.on('data', (data) => {
+    console.error(`stderr: ${data}`);
+    res.status(500).send(data.toString());
+  });
+});
 
 // 라우트 설정
 app.get('/api/colorDetectResult', (req, res) => {
@@ -148,6 +162,40 @@ app.post('/api/equipment/:id', (req, res) => {
     });
 });
 
+// state 테이블
+app.get('/api/state', (req, res) => {
+  const name = req.query.name;
+
+  // 여기에 설비명(name)을 사용하여 state 정보를 데이터베이스에서 가져오는 코드를 작성해야 합니다.
+  const sql = 'SELECT * FROM state WHERE name = ?';
+
+  db.query(sql, [name], (err, data) => {
+    if (err) {
+      console.error('Error fetching state information:', err);
+      res.status(500).send('Internal Server Error');
+    } else {
+      // 여기에서 가져온 state 정보를 클라이언트에게 응답으로 보냅니다.
+      res.send(data); // 여러 개의 state가 반환될 수 있지만 일단 첫 번째 것만 보냄
+    }
+  });
+});
+
+// app.post('/api/state', (req, res) => {
+//   const stateInfo = req.body; // stateInfo 객체 받기
+//   console.log("!!!!!!!난 잘 있어요~~!!!!!!!!", stateInfo);
+
+//   const sql = 'SELECT * FROM state WHERE name = ?';
+
+//   db.query(sql, [stateInfo.name], (err, data) => {
+//     if (err) {
+//       console.error('Error fetching state information:', err);
+//       res.status(500).send('Internal Server Error');
+//     } else {
+//       // 여기에서 가져온 state 정보를 클라이언트에게 응답으로 보냅니다.
+//       res.send(data[0]); // 여러 개의 state가 반환될 수 있지만 일단 첫 번째 것만 보냄
+//     }
+//   });
+// });
 
 // 라우트 설정 (설비 삭제)
 app.delete('/api/equipment/:id', (req, res) => {

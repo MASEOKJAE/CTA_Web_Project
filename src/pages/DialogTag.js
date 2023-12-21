@@ -8,6 +8,7 @@ import {
     DialogActions, 
     Button,
 } from '@mui/material';
+import axios from 'axios';
 
 // import DatePicker from 'react-datepicker';
 // import "react-datepicker/dist/react-datepicker.css";
@@ -45,11 +46,51 @@ function DialogTag(props) {
   // console.log('$$$date =', date, typeof date)
   const [installationDate, setInstallationDate] = useState(date)
   const [location, setLocation] = useState(props.row?.location ?? '')
+  const [qrCodeImage, setQrCodeImage] = useState('');
+  const [isQrCodeModalOpen, setQrCodeModalOpen] = useState(false);
+
   // console.log('date=', installationDate);
   const row = {
     id, code, name, installationDate, location
   }
+  // const createQR = async () => {
+  //   const response = await axios.get('http://localhost:3001/runQRpy');
+  //   console.log(response.data);
+  // }
+  const generateQRCode = async () => {
+    try {
+      // Make an Axios POST request to trigger QR code generation
+      const response = await axios.post('/runQRpy', {
+        code,
+        name,
+        installationDate,
+        location,
+      });
+
+      // Handle the response if needed
+      console.log(response.data);
+
+      // Open the modal or take further actions as needed
+    } catch (error) {
+      console.error('Error generating QR code:', error);
+      // Handle the error (e.g., show an error message to the user)
+    }
+  };
   
+  
+  
+  const fetchAndDisplayQRCode = async (code) => {
+    try {
+      // Fetch QR code image from the server
+      const qrCodeImageURL = `/QRcodes/${code}.png`;
+
+      // Display QR code image in the modal
+      setQrCodeImage(qrCodeImageURL);
+      setQrCodeModalOpen(true);
+    } catch (error) {
+      console.error('Error fetching QR code image:', error);
+    }
+  };
     return (
       <Dialog open={props.open} onClose={props.onClose}>
               <DialogTitle>{props.title}</DialogTitle>
@@ -104,6 +145,9 @@ function DialogTag(props) {
                   // onChange={(ev) => row.location = ev.target.value}
                   onChange={(ev) => setLocation(ev.target.value)}
                 />
+                <DialogActions>
+                <Button onClick={() => generateQRCode()}>QR 코드 생성</Button>
+                </DialogActions>
               </DialogContent>
               <DialogActions>
                 <Button onClick={() => props.handleClose()}>취소</Button>

@@ -1,40 +1,30 @@
+// ImageModal.js
+
 import React from 'react';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Typography,
-  Card,
-  CardMedia,
-} from '@mui/material';
+import { Modal, Backdrop, Fade, Paper, Box, Button } from '@mui/material';
 
 const ImageModal = ({ isOpen, onClose, images }) => {
   return (
-    <Dialog open={isOpen} onClose={onClose}>
-      <DialogTitle>Repair History Images</DialogTitle>
-      <DialogContent>
-        {images.map((image, index) => (
-          <Card key={index} sx={{ maxWidth: 200, marginBottom: 2 }}>
-            <CardMedia
-              component="img"
-              alt={`Image ${index + 1}`}
-              height="140"
-              image={`data:image/png;base64,${image.photoPath}`}
-            />
-          </Card>
-        ))}
-        {images.length === 0 && (
-          <Typography variant="body2">No images found for the repair history.</Typography>
-        )}
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} color="primary">
-          Close
-        </Button>
-      </DialogActions>
-    </Dialog>
+    <Modal
+      open={isOpen}
+      onClose={onClose}
+      closeAfterTransition
+    >
+      <Fade in={isOpen}>
+        <Paper>
+          {/* Center the images */}
+          <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" p={2}>
+            {images.map((image, index) => (
+              <img key={index} src={image} alt={`QR Code ${index + 1}`} style={{ maxWidth: '100%', marginBottom: '16px' }} />
+            ))}
+            {/* Button for instant printing */}
+            <Button variant="contained" onClick={() => window.print()}>
+              QR Code 인쇄
+            </Button>
+          </Box>
+        </Paper>
+      </Fade>
+    </Modal>
   );
 };
 
