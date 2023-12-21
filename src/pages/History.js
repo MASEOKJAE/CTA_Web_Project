@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useLocation } from 'react-router-dom';
-import { Container, Typography, Table, TableContainer, TableHead, TableBody, TableRow, TableCell, Paper, Box } from '@mui/material';
+import { Container, Typography, Table, TableContainer, TableHead, TableBody, TableRow, TableCell, Paper, Box, Button, Modal } from '@mui/material';
 import { styled } from '@mui/system';
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
@@ -15,6 +15,9 @@ const HistoryPage = () => {
   const { state } = location;
 
   const { equipment, stateInfo } = state;
+
+  const [open, setOpen] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState(null);
 
   if (!state || !state.equipment || !state.stateInfo) {
     return (
@@ -62,13 +65,38 @@ const HistoryPage = () => {
                   <TableCell>{info.name}</TableCell>
                   <TableCell>{info.photoName.split("photo_")[1].split(".jpg")[0]}</TableCell>
                   <TableCell>{info.status}</TableCell>
-                  <TableCell>{info.photoPath}</TableCell>
+                  <TableCell>
+                    <Button variant="outlined" color="primary" onClick={() => {
+                      const photoPath = info.photoPath.split('CTA_Web_Project/public')[1];
+                      setSelectedPhoto(photoPath);
+                      setOpen(true);
+                    }}>확인</Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </TableContainer>
       </Container>
+
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+      >
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            bgcolor: 'background.paper',
+            boxShadow: 24,
+            p: 4,
+          }}
+        >
+          <img src={selectedPhoto} alt="Not Founded" />
+        </Box>
+      </Modal>
     </>
   );
 };

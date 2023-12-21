@@ -1,45 +1,22 @@
-import { Helmet } from 'react-helmet-async';
-import { faker } from '@faker-js/faker';
-// @mui
-import { useTheme } from '@mui/material/styles';
-import { React, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { UserListHead } from '../sections/@dashboard/user';
 import axios from 'axios';
-// @mui
-import {
+import { 
     Card,
     Table,
     Stack,
-    Paper,
     Button,
-    Popover,
-    Checkbox,
     TableRow,
-    MenuItem,
     TableBody,
     TableCell,
     Container,
     Typography,
     IconButton,
     TableContainer,
-    TablePagination,
-    Dialog,
 } from '@mui/material';
-// components
-import { UserListHead } from '../sections/@dashboard/user';
+import { Helmet } from 'react-helmet-async';
 import Iconify from '../components/iconify';
-// sections
-import {
-    AppTasks,
-    AppNewsUpdate,
-    AppOrderTimeline,
-    AppCurrentVisits,
-    AppWebsiteVisits,
-    AppTrafficBySite,
-    AppWidgetSummary,
-    AppCurrentSubject,
-    AppConversionRates,
-} from '../sections/@dashboard/app';
 import DialogTag from './DialogTag';
 import ImageModal from './ImageModal';
 
@@ -57,48 +34,57 @@ const TABLE_HEAD = [
     { id: 'qr', label: 'QR code', alignRight: false },
     { id: 'edit', label: '수정', alignRight: false },
     { id: 'delete', label: '삭제', alignRight: false },
-
 ];
 
 export default function DashboardAppPage() {
-    const theme = useTheme();
-
-    const [userList, setUserList] = useState([])
-
-    const [order, setOrder] = useState('asc');
-
-    const [selected, setSelected] = useState([]);
-
-    const [orderBy, setOrderBy] = useState('name');
-
     const [openCreate, setOpenCreate] = useState(false);
-
     const [equipmentData, setEquipmentData] = useState([]);
-
     const [editRow, setEditRow] = useState(null);
+    const [repairStatus, setRepairStatus] = useState({});
+    const [qrCodeImage, setQrCodeImage] = useState('');
+    const [isQrCodeModalOpen, setQrCodeModalOpen] = useState(false);
 
     const navigate = useNavigate();
 
-    const goHistory = () => {
-        navigate("/a_dashboard/a_studentlist");
-        //student_list();
-    };
+    useEffect(() => {
+        const fetchRepairStatus = async () => {
+            try {
+                const response = await axios.get('/api/equipment');
+                const equipmentData = response.data;
+                const statusData = {};
 
-    // 설비추가 다이얼로그 열기
+                for (const equipment of equipmentData) {
+                    const statusResponse = await axios.get(`/api/state?name=${equipment.code}`);
+                    const statusInfo = statusResponse.data;
+
+                    if (statusInfo.length > 0) {
+                        const latestStatus = statusInfo[statusInfo.length - 1].status;
+                        statusData[equipment.code] = latestStatus;
+                    } else {
+                        statusData[equipment.code] = '현장 확인 필요';
+                    }
+                }
+                
+                setRepairStatus(statusData);
+            } catch (error) {
+                console.error('Error fetching repair status:', error);
+            }
+        };
+
+        fetchRepairStatus();
+    }, []);
+
     const handleClickOpenCreate = () => {
-        // console.log('handleClickOpenCreate')
-        setOpenCreate(true); // 다이얼로그 열기
+        setOpenCreate(true);
     }
 
-    // 설비추가 다이얼로그 닫기
     const handleCloseCreate = async (row) => {
         setOpenCreate(false);
 
-        // row가 전달되었을 때만 서버에 데이터 전송
         if (row && row.installationDate) {
             row.installationDate = new Date(row.installationDate).toISOString().split('T')[0];
+            
             try {
-                // 서버로 데이터 전송 (예: /api/equipment 경로 사용)
                 const response = await axios.post('/api/equipment', row, {
                     headers: {
                         'Content-Type': 'application/json',
@@ -107,12 +93,9 @@ export default function DashboardAppPage() {
 
                 const data = response.data;
 
-                // 서버에서 받은 데이터를 기존 리스트에 추가
                 setEquipmentData([...equipmentData, data.result]);
-
                 console.log('Equipment added successfully:', data.message);
-
-                // Refresh the page
+                
                 window.location.reload();
             } catch (error) {
                 console.error('Error adding equipment:', error);
@@ -120,11 +103,7 @@ export default function DashboardAppPage() {
         }
     };
 
-
-    // 설비 삭제
     const handleItemDelete = (id) => {
-        console.log("id : ", id);
-        // 서버 요청 (code와 함께)
         axios.delete(`/api/equipment/${id}`)
             .then(() => {
                 alert("Successful delete");
@@ -135,32 +114,15 @@ export default function DashboardAppPage() {
             });
     }
 
-    // // 설비 내용 삭제 전 물어보기
-    // const handleOpenDelete = (equipment) => {    
-    //   if (window.confirm("정말로 삭제하시겠습니까?")) {
-    //     handleItemDelete(equipment.code);
-    //   }
-    // }
-
-    // 설비내용 수정
     const handleCloseEdit = (row) => {
         if (row) {
-
             row.installationDate = new Date(row.installationDate).toISOString().split('T')[0];
-
-            // 새로운 equipmentData를 만들어서 기존 데이터를 복제
             const newEquipmentData = [...equipmentData];
-
-            // 수정된 행의 인덱스 찾기
             const index = newEquipmentData.findIndex((equipment) => equipment.id === row.id);
-
-            // 수정된 행으로 기존 데이터를 업데이트
             newEquipmentData[index] = row;
 
-            // 상태 업데이트
             setEquipmentData(newEquipmentData);
 
-            // 서버 요청
             axios.put(`/api/equipment/${row.id}`, row)
                 .then(response => {
                     console.log('Response:', response.data);
@@ -170,40 +132,29 @@ export default function DashboardAppPage() {
                 });
         }
 
-        // 다이얼로그 닫기
         setEditRow(null);
     };
 
-
-    // 설비 내용 수정
     const handleOpenEditDialog = (row) => {
         setEditRow(row);
     }
 
-    // History 페이지로 넘어가기 위해
     const handleStatusConfirmation = async (equipment) => {
         try {
             const response = await axios.get(`/api/state?name=${equipment.code}`);
-            console.log("확인 => " + response);
             const stateInfo = response.data;
-            console.log("!!!!!!!! 확인 !!!!!!! -> ", stateInfo);
-            if (stateInfo.length > 0) {
-                // useNavigate를 사용하여 History 페이지로 이동
-                navigate('/dashboard/history', { state: { equipment, stateInfo }, replace: true });
 
+            if (stateInfo.length > 0) {
+                navigate('/dashboard/history', { state: { equipment, stateInfo }, replace: true });
             } else {
-                alert(equipment.name + '에 대한 정보가 존재하지 않습니다.');
+                alert(`${equipment.name}에 대한 정보가 존재하지 않습니다.`);
             }
         } catch (error) {
             console.error('Error fetching state information:', error);
         }
     };
 
-    const [qrCodeImage, setQrCodeImage] = useState('');
-    const [isQrCodeModalOpen, setQrCodeModalOpen] = useState(false);
-
     const handleQrCodeConfirmation = (code) => {
-        // Set the selected QR code for the modal
         setQrCodeImage(`/assets/QRcodes/${code}.png`);
         setQrCodeModalOpen(true);
     };
@@ -211,7 +162,6 @@ export default function DashboardAppPage() {
     useEffect(() => {
         axios.get('/api/equipment')
             .then((response) => {
-                console.log("데이터 가져오는 중!!!");
                 setEquipmentData(response.data);
             })
             .catch((error) => {
@@ -219,17 +169,12 @@ export default function DashboardAppPage() {
             });
     }, []);
 
-    // 이미지 검출 결과 상시 확인
     useEffect(() => {
         const fetchColorDetectResult = async () => {
             try {
-                // Fetch color detect result from the server
                 const response = await axios.get('/api/colorDetectResult');
                 const { result } = response.data;
 
-                console.log("제발!!!! -> " + result);
-
-                // If the result is 1, show an alert
                 if (result === '1') {
                     alert('설비에 문제가 발생했습니다!!');
                     await axios.put('/api/colorDetectResult/reset');
@@ -239,10 +184,8 @@ export default function DashboardAppPage() {
             }
         };
 
-        // Call the function every 5 seconds
         const intervalId = setInterval(fetchColorDetectResult, 5000);
 
-        // Clear interval on component unmount
         return () => clearInterval(intervalId);
     }, []);
 
@@ -260,16 +203,12 @@ export default function DashboardAppPage() {
                     <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={handleClickOpenCreate}>
                         설비 추가
                     </Button>
-                    {/* 사용자사 설비 추가 버튼 클릭 후 DialogTag 그림 */}
                     {openCreate && <DialogTag
                         open={openCreate}
-                        // onClose={handleCloseCreate} 
                         title={'추가하기'}
                         handleClose={handleCloseCreate}
                         confirm={'추가하기'}
-
                     />}
-
                 </Stack>
 
                 <Card>
@@ -286,9 +225,8 @@ export default function DashboardAppPage() {
                                         <TableCell>{equipment.name}</TableCell>
                                         <TableCell>{new Date(equipment.installationDate).toLocaleString()}</TableCell>
                                         <TableCell>{equipment.location}</TableCell>
-                                        {/* <TableCell align="left">최신상태</TableCell> */}
                                         <TableCell align="left">최종 점검일</TableCell>
-                                        <TableCell align="left">불필요</TableCell>
+                                        <TableCell align="left">{repairStatus[equipment.code]}</TableCell>
                                         <TableCell align="left">
                                             <Button variant="text">
                                                 확인
@@ -315,14 +253,12 @@ export default function DashboardAppPage() {
                             {isQrCodeModalOpen && (
                                 <ImageModal isOpen={isQrCodeModalOpen} onClose={() => setQrCodeModalOpen(false)} images={[qrCodeImage]} />
                             )}
-
                         </Table>
                     </TableContainer>
                 </Card>
             </Container>
             {editRow && <DialogTag
                 open={!!editRow}
-                // onClose={handleCloseEdit} 
                 title={'수정하기'}
                 row={editRow}
                 handleClose={handleCloseEdit}
