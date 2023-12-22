@@ -139,6 +139,7 @@ export default function DashboardAppPage() {
         setEditRow(row);
     }
 
+    // 해당 설비 state 상세 정보 확인
     const handleStatusConfirmation = async (equipment) => {
         try {
             const response = await axios.get(`/api/state?name=${equipment.code}`);
