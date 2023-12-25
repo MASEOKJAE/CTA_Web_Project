@@ -1,0 +1,47 @@
+/* Your existing styles */
+.header .language > p {
+    cursor: pointer;
+    position: relative;
+    font-size: 15px;
+    color: #fff;
+    border: 1px solid #fff;
+    padding: 4px 16px;
+    border-radius: 55px;
+}
+
+/* Override :hover styles */
+.header .language > p:hover {
+    background-color: initial; /* Set the background color to initial, preventing the change */
+    color: #fff; /* Set the text color */
+    border: 1px solid #fff; /* Set the border color */
+}
+.addEquipmentButton {
+    /* Add your default styles here */
+    cursor: pointer;
+    position: relative;
+    font-size: 15px;
+    color: #333!important;
+    border: 2px solid #3d78de!important;
+    padding: 4px 16px;
+    border-radius: 55px;
+    background-color: #fff; /* Add your desired background color */
+    /* Add any other styles you want to customize */
+  }
+  
+.h_event2 {
+cursor: pointer;
+  position: fixed;
+  bottom: 16px; /* Adjust the distance from the bottom as needed */
+  right: 16px; /* Adjust the distance from the right as needed */
+  font-size: 15px;
+  color: #333!important;
+  border: 2px solid #3d78de!important;
+  padding: 4px 16px;
+  border-radius: 55px;
+  background-color: #fff; /* Add your desired background color */
+  /* Add any other styles you want to customize */
+  z-index: 1000; 
+}
+  
+  
+

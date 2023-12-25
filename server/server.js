@@ -2,6 +2,7 @@ const express = require('express');
 const { spawn } = require('child_process');
 const cors = require('cors');
 const db = require('./db');
+const fs = require('fs'); 
 const chokidar = require('chokidar');
 const { exec } = require('child_process');
 const app = express();
@@ -84,6 +85,139 @@ app.post('/runQRpy', (req, res) => {
     res.status(500).send(data.toString());
   });
 });
+// New endpoint to retrieve QR code image data
+// app.get('/api/getQRCodeImage/:code', (req, res) => {
+//   const code = req.params.code;
+
+//   // Replace 'your_database_config' with your actual database configuration
+//   const connection = mysql.createConnection({
+//     host: 'your_database_host',
+//     user: 'your_database_user',
+//     password: 'your_database_password',
+//     database: 'your_database_name',
+//   });
+
+
+//   connection.connect();
+
+//   const query = `SELECT qr_code FROM equipment WHERE code = ?`;
+
+//   connection.query(query, [code], (error, results) => {
+//     if (error) {
+//       console.error('Error retrieving QR code image:', error);
+//       res.status(500).send('Error retrieving QR code image');
+//     } else {
+//       if (results.length > 0 && results[0].qr_code) {
+//         // Send the QR code image data
+//         res.send(results[0].qr_code);
+//       } else {
+//         res.status(404).send('QR code image not found');
+//       }
+//     }
+
+//     connection.end();
+//   });
+// });
+
+app.post('/runQRpy', async (req, res) => {
+  const { code, name, installationDate, location } = req.body;
+
+  // Execute the python script to generate QR code
+  const command = `python3 /home/ubuntu/WorkSpace/CTA_Web_Project/python_files/qr.py ${code}`;
+  exec(command, async (error, stdout, stderr) => {
+    if (error) {
+      console.log(`Error: ${error.message}`);
+      res.status(500).send(error.message);
+    } else if (stderr) {
+      console.log(`Stderr: ${stderr}`);
+      res.status(500).send(stderr);
+    } else {
+      try {
+        // Read the QR code image file
+        const imageFileName = `${code}.png`;
+        const imagePath = `/home/ubuntu/WorkSpace/CTA_Web_Project/public/assets/QRcodes/${imageFileName}`;
+        
+        const imageBuffer = await fs.promises.readFile(imagePath);
+
+        // Save the image to the database
+        const sql = 'UPDATE equipment SET qr_code = ? WHERE code = ?';
+        const values = [imageBuffer, code];
+        
+        db.query(sql, values, (dbErr, result) => {
+          if (dbErr) {
+            console.error('Error updating database:', dbErr);
+            res.status(500).send(dbErr.toString());
+          } else {
+            console.log('Database updated successfully');
+            res.send(stdout.trim());
+          }
+        });
+      } catch (imageError) {
+        console.error('Error reading QR code image:', imageError);
+        res.status(500).send(imageError.toString());
+      }
+    }
+  });
+});
+app.get('/api/getQRCodeImage/:code', (req, res) => {
+  const code = req.params.code;
+
+  const query = 'SELECT qr_code FROM equipment WHERE code = ?';
+
+  db.query(query, [code], (error, results) => {
+    if (error) {
+      console.error('Error retrieving QR code image:', error);
+      res.status(500).send('Error retrieving QR code image');
+    } else {
+      if (results.length > 0 && results[0].qr_code) {
+        // Send the QR code image data
+        res.send(results[0].qr_code);
+      } else {
+        res.status(404).send('QR code image not found');
+      }
+    }
+  });
+});
+
+// app.post('/runQRpy', (req, res) => {
+//   const { code, name, installationDate, location } = req.body;
+
+//   const python = spawn('python3', ['/home/ubuntu/WorkSpace/CTA_Web_Project/python_files/qr.py', code]);
+  
+//   python.stdout.on('data', (data) => {
+//     console.log(`stdout: ${data}`);
+    
+//     // Read the QR code image file
+//     const imageFileName = `${code}.png`;
+//     const imagePath = `/home/ubuntu/WorkSpace/CTA_Web_Project/public/assets/QRcodes/${imageFileName}`;
+    
+//     fs.readFile(imagePath, (err, imageBuffer) => {
+//       if (err) {
+//         console.error('Error reading QR code image:', err);
+//         res.status(500).send(err.toString());
+//       } else {
+//         // Save the image to the database
+//         const sql = 'UPDATE equipment SET qr_code = ? WHERE code = ?';
+//         const values = [imageBuffer, code];
+        
+//         db.query(sql, values, (dbErr, result) => {
+//           if (dbErr) {
+//             console.error('Error updating database:', dbErr);
+//             res.status(500).send(dbErr.toString());
+//           } else {
+//             console.log('Database updated successfully');
+//             res.send(data.toString());
+//           }
+//         });
+//       }
+//     });
+//   });
+
+//   python.stderr.on('data', (data) => {
+//     console.error(`stderr: ${data}`);
+//     res.status(500).send(data.toString());
+//   });
+// });
 
 // 라우트 설정
 app.get('/api/colorDetectResult', (req, res) => {
@@ -130,17 +264,45 @@ app.get('/api/equipment', (req, res) => {
 app.post('/api/equipment', (req, res) => {
   const { code, name, installationDate, location } = req.body;
 
-  const sql = 'INSERT INTO equipment (code, name, installationDate, location) VALUES (?, ?, ?, ?)';
-
-  db.query(sql, [code, name, installationDate, location], (err, result) => {
-    if (!err) {
-      res.send({ message: 'Equipment added successfully', result });
-    } else {
-      console.error('Error adding equipment:', err);
+  // Check if a record with the provided code exists
+  const checkExistingSql = 'SELECT * FROM equipment WHERE code = ?';
+  db.query(checkExistingSql, [code], (checkErr, checkResult) => {
+    if (checkErr) {
+      console.error('Error checking existing record:', checkErr);
       res.status(500).send('Internal Server Error');
+      return;
+    }
+
+    if (checkResult.length > 0) {
+      // Update the existing record
+      const updateSql = `
+        UPDATE equipment
+        SET name = ?, installationDate = ?, location = ?
+        WHERE code = ?
+      `;
+      db.query(updateSql, [name, installationDate, location, code], (updateErr, updateResult) => {
+        if (!updateErr) {
+          res.send({ message: 'Equipment updated successfully', result: updateResult });
+        } else {
+          console.error('Error updating equipment:', updateErr);
+          res.status(500).send('Internal Server Error');
+        }
+      });
+    } else {
+      // Insert a new record
+      const insertSql = 'INSERT INTO equipment (code, name, installationDate, location) VALUES (?, ?, ?, ?)';
+      db.query(insertSql, [code, name, installationDate, location], (insertErr, insertResult) => {
+        if (!insertErr) {
+          res.send({ message: 'Equipment added successfully', result: insertResult });
+        } else {
+          console.error('Error adding equipment:', insertErr);
+          res.status(500).send('Internal Server Error');
+        }
+      });
     }
   });
 });
+
 
 
 app.post('/api/equipment/:id', (req, res) => {

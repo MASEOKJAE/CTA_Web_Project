@@ -10,14 +10,7 @@ import {
 } from '@mui/material';
 import axios from 'axios';
 
-// import DatePicker from 'react-datepicker';
-// import "react-datepicker/dist/react-datepicker.css";
-import { DatePicker } from '@mui/lab/DatePicker';
-import { LocalizationProvider } from '@mui/lab/LocalizationProvider';
-// import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
-// import dayjs from 'dayjs';
 import { format } from 'date-fns';
-// import { AdapterDateFns } from '@mui/lab/AdapterDateFns';
 
 function toDate (date) {
   // console.log('toDate:', date)
@@ -32,13 +25,6 @@ function toDate (date) {
 }
 
 function DialogTag(props) {
-  // const row = Object.assign({}, props.row ?? {
-  //   code: '',
-  //   name: '',
-  //   installationDate: '',
-  //   location: ''
-  // })
-  // console.log('currentRow: ', props.row)
   const id = props.row?.id ?? 0
   const [code, setCode] = useState(props.row?.code ?? '') // 추가 시 ->  빈값 설정, 수정 시 -> 해당 row 의 값이 저장됨
   const [name, setName] = useState(props.row?.name ?? '')
@@ -53,10 +39,6 @@ function DialogTag(props) {
   const row = {
     id, code, name, installationDate, location
   }
-  // const createQR = async () => {
-  //   const response = await axios.get('http://localhost:3001/runQRpy');
-  //   console.log(response.data);
-  // }
   const generateQRCode = async () => {
     try {
       // Make an Axios POST request to trigger QR code generation
@@ -128,12 +110,6 @@ function DialogTag(props) {
                   value={format(new Date(installationDate), 'yyyy-MM-dd')} // Convert to Date object
                   onChange={(ev) => setInstallationDate(ev.target.value)}
                 />
-                 {/* <LocalizationProvider dateAdapter={AdapterDayjs}>
-                  <DemoContainer components={['DatePicker']}>
-                    <DatePicker label="Basic date picker" />
-                  </DemoContainer>
-                </LocalizationProvider> */}
-                {/* <DatePicker /> */}
                 
                 <TextField 
                   margin="dense"
