@@ -2,7 +2,7 @@ const express = require('express');
 const { spawn } = require('child_process');
 const cors = require('cors');
 const db = require('./db');
-const fs = require('fs'); 
+const fs = require('fs');
 const chokidar = require('chokidar');
 const { exec } = require('child_process');
 const app = express();
@@ -136,13 +136,13 @@ app.post('/runQRpy', async (req, res) => {
         // Read the QR code image file
         const imageFileName = `${code}.png`;
         const imagePath = `/home/ubuntu/WorkSpace/CTA_Web_Project/public/assets/QRcodes/${imageFileName}`;
-        
+
         const imageBuffer = await fs.promises.readFile(imagePath);
 
         // Save the image to the database
         const sql = 'UPDATE equipment SET qr_code = ? WHERE code = ?';
         const values = [imageBuffer, code];
-        
+
         db.query(sql, values, (dbErr, result) => {
           if (dbErr) {
             console.error('Error updating database:', dbErr);
@@ -178,46 +178,6 @@ app.get('/api/getQRCodeImage/:code', (req, res) => {
     }
   });
 });
-
-// app.post('/runQRpy', (req, res) => {
-//   const { code, name, installationDate, location } = req.body;
-
-//   const python = spawn('python3', ['/home/ubuntu/WorkSpace/CTA_Web_Project/python_files/qr.py', code]);
-  
-//   python.stdout.on('data', (data) => {
-//     console.log(`stdout: ${data}`);
-    
-//     // Read the QR code image file
-//     const imageFileName = `${code}.png`;
-//     const imagePath = `/home/ubuntu/WorkSpace/CTA_Web_Project/public/assets/QRcodes/${imageFileName}`;
-    
-//     fs.readFile(imagePath, (err, imageBuffer) => {
-//       if (err) {
-//         console.error('Error reading QR code image:', err);
-//         res.status(500).send(err.toString());
-//       } else {
-//         // Save the image to the database
-//         const sql = 'UPDATE equipment SET qr_code = ? WHERE code = ?';
-//         const values = [imageBuffer, code];
-        
-//         db.query(sql, values, (dbErr, result) => {
-//           if (dbErr) {
-//             console.error('Error updating database:', dbErr);
-//             res.status(500).send(dbErr.toString());
-//           } else {
-//             console.log('Database updated successfully');
-//             res.send(data.toString());
-//           }
-//         });
-//       }
-//     });
-//   });
-
-//   python.stderr.on('data', (data) => {
-//     console.error(`stderr: ${data}`);
-//     res.status(500).send(data.toString());
-//   });
-// });
 
 // 라우트 설정
 app.get('/api/colorDetectResult', (req, res) => {
@@ -342,23 +302,6 @@ app.get('/api/state', (req, res) => {
   });
 });
 
-// app.post('/api/state', (req, res) => {
-//   const stateInfo = req.body; // stateInfo 객체 받기
-//   console.log("!!!!!!!난 잘 있어요~~!!!!!!!!", stateInfo);
-
-//   const sql = 'SELECT * FROM state WHERE name = ?';
-
-//   db.query(sql, [stateInfo.name], (err, data) => {
-//     if (err) {
-//       console.error('Error fetching state information:', err);
-//       res.status(500).send('Internal Server Error');
-//     } else {
-//       // 여기에서 가져온 state 정보를 클라이언트에게 응답으로 보냅니다.
-//       res.send(data[0]); // 여러 개의 state가 반환될 수 있지만 일단 첫 번째 것만 보냄
-//     }
-//   });
-// });
-
 // 라우트 설정 (설비 삭제)
 app.delete('/api/equipment/:id', (req, res) => {
   const equipmentID = req.params.id;
@@ -418,6 +361,66 @@ app.get('/api/equipment/:id/repair-history/images', (req, res) => {
   });
 });
 
+// Repair 정보를 가져오는 GET 요청
+app.get('/api/repairs/:code', (req, res) => {
+  const code = req.params.code;
+  const sql = 'SELECT * FROM repair WHERE code = ?';
+
+  db.query(sql, [code], (error, results) => {
+    if (error) {
+      console.error('Error getting repair data:', error);
+      res.status(500).send(error.toString());
+    } else {
+      res.json(results);
+    }
+  });
+});
+
+// Repair 정보를 추가하는 POST 요청
+app.post('/api/repairs', (req, res) => {
+  const { code, admin, repairDate, status, comment, photo } = req.body;
+  const sql = 'INSERT INTO repair (code, admin, repairDate, status, comment, photo) VALUES (?, ?, ?, ?, ?, ?)';
+
+  db.query(sql, [code, admin, repairDate, status, comment, photo], (error, results) => {
+    if (error) {
+      console.error('Error adding repair data:', error);
+      res.status(500).send(error.toString());
+    } else {
+      res.json(results);
+    }
+  });
+});
+
+// Repair 정보를 수정하는 PUT 요청
+app.put('/api/repairs/:id', (req, res) => {
+  const { code, admin, repairDate, status, comment, photo } = req.body;
+  const id = req.params.id;
+  const sql = 'UPDATE repair SET code = ?, admin = ?, repairDate = ?, status = ?, comment = ?, photo = ? WHERE id = ?';
+
+  db.query(sql, [code, admin, repairDate, status, comment, photo, id], (error, results) => {
+    if (error) {
+      console.error('Error updating repair data:', error);
+      res.status(500).send(error.toString());
+    } else {
+      res.json(results);
+    }
+  });
+});
+
+// Repair 정보를 삭제하는 DELETE 요청
+app.delete('/api/repairs/:id', (req, res) => {
+  const id = req.params.id;
+  const sql = 'DELETE FROM repair WHERE id = ?';
+
+  db.query(sql, [id], (error, results) => {
+    if (error) {
+      console.error('Error deleting repair data:', error);
+      res.status(500).send(error.toString());
+    } else {
+      res.json(results);
+    }
+  });
+});
 
 // 서버 시작
 app.listen(PORT, () => {

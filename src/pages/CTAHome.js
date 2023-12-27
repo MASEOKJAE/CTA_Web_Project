@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserListHead } from '../sections/@dashboard/user';
 import axios from 'axios';
-import { 
+import {
     Card,
     Table,
     Stack,
@@ -14,11 +14,15 @@ import {
     Typography,
     IconButton,
     TableContainer,
+    TextField,
+    TablePagination,
 } from '@mui/material';
 import { Helmet } from 'react-helmet-async';
 import Iconify from '../components/iconify';
-import DialogTag from './DialogTag';
+import DialogTag from './Dialog/DialogTag';
 import ImageModal from './ImageModal';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import './CTAHome.css';
 
 // ----------------------------------------------------------------------
@@ -45,21 +49,38 @@ export default function DashboardAppPage() {
     const [qrCodeImage, setQrCodeImage] = useState('');
     const [isQrCodeModalOpen, setQrCodeModalOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(5);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const filteredEquipmentData = equipmentData.filter((equipment) =>
+        equipment.code.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const handleChangePage = (event, newPage) => {
+        setPage(newPage);
+    };
+
+    const handleChangeRowsPerPage = (event) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
+    };
+    
 
     const navigate = useNavigate();
 
     useEffect(() => {
         const handleScroll = () => {
-          const scrollTop = window.scrollY;
-          setIsScrolled(scrollTop > 0);
+            const scrollTop = window.scrollY;
+            setIsScrolled(scrollTop > 0);
         };
-    
+
         window.addEventListener('scroll', handleScroll);
-    
+
         return () => {
-          window.removeEventListener('scroll', handleScroll);
+            window.removeEventListener('scroll', handleScroll);
         };
-      }, []);
+    }, []);
 
     useEffect(() => {
         const fetchRepairStatus = async () => {
@@ -79,7 +100,7 @@ export default function DashboardAppPage() {
                         statusData[equipment.code] = '현장 확인 필요';
                     }
                 }
-                
+
                 setRepairStatus(statusData);
             } catch (error) {
                 console.error('Error fetching repair status:', error);
@@ -98,7 +119,7 @@ export default function DashboardAppPage() {
 
     //     if (row && row.installationDate) {
     //         row.installationDate = new Date(row.installationDate).toISOString().split('T')[0];
-            
+
     //         try {
     //             const response = await axios.post('/api/equipment', row, {
     //                 headers: {
@@ -110,7 +131,7 @@ export default function DashboardAppPage() {
 
     //             setEquipmentData([...equipmentData, data.result]);
     //             console.log('Equipment added successfully:', data.message);
-                
+
     //             window.location.reload();
     //         } catch (error) {
     //             console.error('Error adding equipment:', error);
@@ -121,7 +142,7 @@ export default function DashboardAppPage() {
     //     try {
     //       // Fetch the QR code image from the server
     //       const response = await fetch(`/api/getQRCodeImage/${code}`);
-          
+
     //       if (response.ok) {
     //         // If the response is successful, set the QR code image and open the modal
     //         const imageBlob = await response.blob();
@@ -139,24 +160,24 @@ export default function DashboardAppPage() {
 
     // const handleCloseCreate = async (row) => {
     //     setOpenCreate(false);
-    
+
     //     let code; // Declare the 'code' variable here
-    
+
     //     if (row && row.installationDate) {
     //         row.installationDate = new Date(row.installationDate).toISOString().split('T')[0];
-    
+
     //         try {
     //             const response = await axios.post('/api/equipment', row, {
     //                 headers: {
     //                     'Content-Type': 'application/json',
     //                 },
     //             });
-    
+
     //             const data = response.data;
-    
+
     //             setEquipmentData([...equipmentData, data.result]);
     //             console.log('Equipment added successfully:', data.message);
-    
+
     //             // Capture the 'code' value here
     //             code = data.result.code;
     //         } catch (error) {
@@ -173,60 +194,70 @@ export default function DashboardAppPage() {
     // };
     const generateAndSaveQRCode = async (code) => {
         try {
-          // Fetch the QR code image from the server
-          const response = await fetch(`/api/generateQRCode/${code}`);
-    
-          if (response.ok) {
-            // If the response is successful, set the QR code image and open the modal
-            const imageBlob = await response.blob();
-            const qrCodeImageURL = URL.createObjectURL(imageBlob);
-    
-            setQrCodeImage(qrCodeImageURL);
-            setQrCodeModalOpen(true);
-    
-            // Save the QR code image URL to the database (you may need to adjust this logic based on your backend)
-            await axios.put(`/api/equipment/${code}`, {
-              qr_code: qrCodeImageURL,
-            });
-          } else {
-            // If there is an error in fetching the image, log an error
-            console.error('Error generating or fetching QR code image:', response.statusText);
-          }
-        } catch (error) {
-          // If there is a general error, log an error
-          console.error('Error generating or fetching QR code image:', error);
-        }
-      };
+            // Fetch the QR code image from the server
+            const response = await fetch(`/api/generateQRCode/${code}`);
 
-      const handleCloseCreate = async (row) => {
+            if (response.ok) {
+                // If the response is successful, set the QR code image and open the modal
+                const imageBlob = await response.blob();
+                const qrCodeImageURL = URL.createObjectURL(imageBlob);
+
+                setQrCodeImage(qrCodeImageURL);
+                setQrCodeModalOpen(true);
+
+                // Save the QR code image URL to the database (you may need to adjust this logic based on your backend)
+                await axios.put(`/api/equipment/${code}`, {
+                    qr_code: qrCodeImageURL,
+                });
+            } else {
+                // If there is an error in fetching the image, log an error
+                console.error('Error generating or fetching QR code image:', response.statusText);
+            }
+        } catch (error) {
+            // If there is a general error, log an error
+            console.error('Error generating or fetching QR code image:', error);
+        }
+    };
+
+    const handleCloseCreate = async (row) => {
         let code;
     
         if (row && row.installationDate) {
             row.installationDate = new Date(row.installationDate).toISOString().split('T')[0];
     
-            try {
-                const response = await axios.post('/api/equipment', row, {
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                });
+            // Check if the code already exists in the table
+            const codeExistsInTable = equipmentData.some(equipment => equipment.code === row.code);
     
-                const data = response.data;
+            if (codeExistsInTable) {
+                // If the code already exists in the table, show a notification and do not proceed with adding
+                toast.error(`Equipment with code ${row.code} already exists in the table.`);
+            } else {
+                try {
+                    // Add the equipment to the table (assuming the table is updated locally)
+                    setEquipmentData([...equipmentData, row]);
     
-                setEquipmentData([...equipmentData, data.result]);
-                console.log('Equipment added successfully:', data.message);
+                    // Add the equipment to the database
+                    const response = await axios.post('/api/equipment', row, {
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    });
     
-                code = data.result.code;
-            } catch (error) {
-                console.error('Error adding equipment:', error);
-            } finally {
-                if (code) {
-                    handleQrCodeConfirmation(code);
+                    const data = response.data;
+    
+                    console.log('Equipment added successfully:', data.message);
+    
+                    code = data.result.code;
+                } catch (error) {
+                    console.error('Error adding equipment:', error);
+                } finally {
+                    if (code) {
+                        handleQrCodeConfirmation(code);
+                    }
+    
+                    // Close the DialogTag when the process is complete
+                    setOpenCreate(false);
                 }
-                
-                // Close the DialogTag when the process is complete
-                setOpenCreate(false);
-                window.location.reload();
             }
         } else {
             // Close the DialogTag when "취소" button is clicked
@@ -234,6 +265,7 @@ export default function DashboardAppPage() {
         }
     };
     
+
     const handleItemDelete = (id) => {
         axios.delete(`/api/equipment/${id}`)
             .then(() => {
@@ -270,14 +302,18 @@ export default function DashboardAppPage() {
         setEditRow(row);
     }
 
+    const handleFixConfirmation = async (equipment) => {
+        navigate('/dashboard/fixhistory' , { state: { equipment }, replace: true });
+    }
+
     // 해당 설비 state 상세 정보 확인
-    const handleStatusConfirmation = async (equipment) => {
+    const handleStateConfirmation = async (equipment) => {
         try {
             const response = await axios.get(`/api/state?name=${equipment.code}`);
             const stateInfo = response.data;
 
             if (stateInfo.length > 0) {
-                navigate('/dashboard/history', { state: { equipment, stateInfo }, replace: true });
+                navigate('/dashboard/statehistory', { state: { equipment, stateInfo }, replace: true });
             } else {
                 alert(`${equipment.name}에 대한 정보가 존재하지 않습니다.`);
             }
@@ -286,57 +322,33 @@ export default function DashboardAppPage() {
         }
     };
 
-    // const handleQrCodeConfirmation = (code) => {
-    //     setQrCodeImage(`/assets/QRcodes/${code}.png`);
-    //     setQrCodeModalOpen(true);
-    // };
-    // const handleQrCodeConfirmation = async (code) => {
-    //     try {
-    //         const response = await axios.get(`/api/getQRCodeImage/${code}`, { responseType: 'arraybuffer' });
-    
-    //         // Convert the array buffer to a Blob
-    //         const qrCodeBlob = new Blob([response.data], { type: 'image/png' });
-    
-    //         // Create a data URL from the Blob
-    //         const qrCodeImageUrl = URL.createObjectURL(qrCodeBlob);
-    
-    //         setQrCodeImage(qrCodeImageUrl);
-    //         setQrCodeModalOpen(true);
-    //     } catch (error) {
-    //         console.error('Error fetching QR code image:', error);
-    //     }
-    // };
-
     const handleQrCodeConfirmation = async (code, equipmentData) => {
         try {
-          // Fetch the QR code image from the server
-          const response = await fetch(`/api/getQRCodeImage/${code}`);
-    
-          if (response.ok) {
-            // If the response is successful, set the QR code image and open the modal
-            const imageBlob = await response.blob();
-            const qrCodeImageURL = URL.createObjectURL(imageBlob);
-    
-            setQrCodeImage(qrCodeImageURL);
-            setQrCodeModalOpen(true);
-    
-            // Save the QR code image to the database (you may need to adjust this logic based on your backend)
-            await axios.put(`/api/equipment/${code}`, {
-              qr_code: qrCodeImageURL,
-              // ... other fields from equipmentData that you want to save
-            });
-          } else {
-            // If there is an error in fetching the image, log an error
-            console.error('Error fetching QR code image:', response.statusText);
-          }
+            // Fetch the QR code image from the server
+            const response = await fetch(`/api/getQRCodeImage/${code}`);
+
+            if (response.ok) {
+                // If the response is successful, set the QR code image and open the modal
+                const imageBlob = await response.blob();
+                const qrCodeImageURL = URL.createObjectURL(imageBlob);
+
+                setQrCodeImage(qrCodeImageURL);
+                setQrCodeModalOpen(true);
+
+                // Save the QR code image to the database (you may need to adjust this logic based on your backend)
+                await axios.put(`/api/equipment/${code}`, {
+                    qr_code: qrCodeImageURL,
+                    // ... other fields from equipmentData that you want to save
+                });
+            } else {
+                // If there is an error in fetching the image, log an error
+                console.error('Error fetching QR code image:', response.statusText);
+            }
         } catch (error) {
-          // If there is a general error, log an error
-          console.error('Error fetching QR code image:', error);
+            // If there is a general error, log an error
+            console.error('Error fetching QR code image:', error);
         }
-      };
-    
-    
-      
+    };
 
     useEffect(() => {
         axios.get('/api/equipment')
@@ -382,6 +394,12 @@ export default function DashboardAppPage() {
                     {/* <Button className="addEquipmentButton" variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={handleClickOpenCreate}>
                         설비 추가
                     </Button> */}
+                    <TextField
+                    label="검색"
+                    variant="outlined"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
                     <p className={`addEquipmentButton ${isScrolled ? 'h_event2' : ''}`} onClick={handleClickOpenCreate}>
                         설비 추가
                     </p>
@@ -392,6 +410,7 @@ export default function DashboardAppPage() {
                         handleClose={handleCloseCreate}
                         confirm={'추가하기'}
                     />}
+                    
                 </Stack>
 
                 <Card>
@@ -411,11 +430,14 @@ export default function DashboardAppPage() {
                                         <TableCell align="left">최종 점검일</TableCell>
                                         <TableCell align="left">{repairStatus[equipment.code]}</TableCell>
                                         <TableCell align="left">
-                                            <Button variant="text">
+                                            <Button variant="text" onClick={() => handleFixConfirmation(equipment)}>
                                                 확인
                                             </Button>
                                         </TableCell>
-                                        <TableCell align="left"><Button variant="text" onClick={() => handleStatusConfirmation(equipment)}>확인</Button></TableCell>
+                                        <TableCell align="left"><Button variant="text" onClick={() => handleStateConfirmation(equipment)}>
+                                            확인
+                                        </Button>
+                                        </TableCell>
                                         <TableCell align="left"><Button variant="text" onClick={() => handleQrCodeConfirmation(equipment.code)}>
                                             확인
                                         </Button>
@@ -438,6 +460,15 @@ export default function DashboardAppPage() {
                             )}
                         </Table>
                     </TableContainer>
+                    <TablePagination
+                            rowsPerPageOptions={[5, 10, 25]}
+                            component="div"
+                            count={filteredEquipmentData.length}
+                            rowsPerPage={rowsPerPage}
+                            page={page}
+                            onPageChange={handleChangePage}
+                            onRowsPerPageChange={handleChangeRowsPerPage}
+                        />
                 </Card>
             </Container>
             {editRow && <DialogTag
