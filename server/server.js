@@ -422,6 +422,29 @@ app.delete('/api/repairs/:id', (req, res) => {
   });
 });
 
+// 로그인
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+
+  // Perform authentication against the MySQL database
+  const query = `SELECT * FROM userInfo WHERE username = ? AND password = ?`;
+  db.query(query, [username, password], (err, results) => {
+    if (err) {
+      console.error('MySQL query error:', err);
+      res.status(500).json({ error: 'Internal Server Error' });
+      return;
+    }
+
+    if (results.length > 0) {
+      // Authentication successful
+      res.json({ success: true, message: 'Login successful' });
+    } else {
+      // Authentication failed
+      res.status(401).json({ error: 'Invalid credentials' });
+    }
+  });
+});
+
 // 서버 시작
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

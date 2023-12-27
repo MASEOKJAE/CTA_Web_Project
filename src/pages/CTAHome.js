@@ -24,6 +24,7 @@ import ImageModal from './ImageModal';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './CTAHome.css';
+import { useAuth } from '/home/ubuntu/WorkSpace/CTA_Web_Project/src/layouts/dashboard/AuthContext.js';
 
 // ----------------------------------------------------------------------
 
@@ -45,6 +46,7 @@ export default function DashboardAppPage() {
     const [openCreate, setOpenCreate] = useState(false);
     const [equipmentData, setEquipmentData] = useState([]);
     const [editRow, setEditRow] = useState(null);
+    const [repairDoneStatus, setRepairDoneStatus] = useState({});
     const [repairStatus, setRepairStatus] = useState({});
     const [qrCodeImage, setQrCodeImage] = useState('');
     const [isQrCodeModalOpen, setQrCodeModalOpen] = useState(false);
@@ -52,6 +54,7 @@ export default function DashboardAppPage() {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(5);
     const [searchTerm, setSearchTerm] = useState('');
+    const { logout } = useAuth();
 
     const filteredEquipmentData = equipmentData.filter((equipment) =>
         equipment.code.toLowerCase().includes(searchTerm.toLowerCase())
@@ -110,88 +113,38 @@ export default function DashboardAppPage() {
         fetchRepairStatus();
     }, []);
 
+    useEffect(() => {
+        const fetchRepairDoneStatus = async () => {
+            try {
+                const response = await axios.get('/api/equipment');
+                const equipmentData = response.data;
+                const statusData = {};
+
+                for (const equipment of equipmentData) {
+                    const statusDoneResponse = await axios.get(`/api/repairs/${equipment.code}`);
+                    const statusInfo = statusDoneResponse.data;
+
+                    if (statusInfo.length > 0) {
+                        const latestStatus = statusInfo[statusInfo.length - 1].repairDate;
+                        statusData[equipment.code] = latestStatus;
+                    } else {
+                        statusData[equipment.code] = '점검 정보 없음';
+                    }
+                }
+
+                setRepairDoneStatus(statusData);
+            } catch (error) {
+                console.error('Error fetching repair status:', error);
+            }
+        };
+
+        fetchRepairDoneStatus();
+    }, []);
+
     const handleClickOpenCreate = () => {
         setOpenCreate(true);
     }
 
-    // const handleCloseCreate = async (row) => {
-    //     setOpenCreate(false);
-
-    //     if (row && row.installationDate) {
-    //         row.installationDate = new Date(row.installationDate).toISOString().split('T')[0];
-
-    //         try {
-    //             const response = await axios.post('/api/equipment', row, {
-    //                 headers: {
-    //                     'Content-Type': 'application/json',
-    //                 },
-    //             });
-
-    //             const data = response.data;
-
-    //             setEquipmentData([...equipmentData, data.result]);
-    //             console.log('Equipment added successfully:', data.message);
-
-    //             window.location.reload();
-    //         } catch (error) {
-    //             console.error('Error adding equipment:', error);
-    //         }
-    //     }
-    // };
-    // const handleQrCodeConfirmation = async (code) => {
-    //     try {
-    //       // Fetch the QR code image from the server
-    //       const response = await fetch(`/api/getQRCodeImage/${code}`);
-
-    //       if (response.ok) {
-    //         // If the response is successful, set the QR code image and open the modal
-    //         const imageBlob = await response.blob();
-    //         setQrCodeImage(URL.createObjectURL(imageBlob));
-    //         setQrCodeModalOpen(true);
-    //       } else {
-    //         // If there is an error in fetching the image, log an error
-    //         console.error('Error fetching QR code image:', response.statusText);
-    //       }
-    //     } catch (error) {
-    //       // If there is a general error, log an error
-    //       console.error('Error fetching QR code image:', error);
-    //     }
-    //   };
-
-    // const handleCloseCreate = async (row) => {
-    //     setOpenCreate(false);
-
-    //     let code; // Declare the 'code' variable here
-
-    //     if (row && row.installationDate) {
-    //         row.installationDate = new Date(row.installationDate).toISOString().split('T')[0];
-
-    //         try {
-    //             const response = await axios.post('/api/equipment', row, {
-    //                 headers: {
-    //                     'Content-Type': 'application/json',
-    //                 },
-    //             });
-
-    //             const data = response.data;
-
-    //             setEquipmentData([...equipmentData, data.result]);
-    //             console.log('Equipment added successfully:', data.message);
-
-    //             // Capture the 'code' value here
-    //             code = data.result.code;
-    //         } catch (error) {
-    //             console.error('Error adding equipment:', error);
-    //         } finally {
-    //             // This block will be executed regardless of success or error
-    //             window.location.reload();
-    //             // Now you can safely call handleQrCodeConfirmation with the captured 'code'
-    //             if (code) {
-    //                 handleQrCodeConfirmation(code);
-    //             }
-    //         }
-    //     }
-    // };
     const generateAndSaveQRCode = async (code) => {
         try {
             // Fetch the QR code image from the server
@@ -394,12 +347,6 @@ export default function DashboardAppPage() {
                     {/* <Button className="addEquipmentButton" variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={handleClickOpenCreate}>
                         설비 추가
                     </Button> */}
-                    <TextField
-                    label="검색"
-                    variant="outlined"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
                     <p className={`addEquipmentButton ${isScrolled ? 'h_event2' : ''}`} onClick={handleClickOpenCreate}>
                         설비 추가
                     </p>
@@ -427,7 +374,7 @@ export default function DashboardAppPage() {
                                         <TableCell>{equipment.name}</TableCell>
                                         <TableCell>{new Date(equipment.installationDate).toLocaleString()}</TableCell>
                                         <TableCell>{equipment.location}</TableCell>
-                                        <TableCell align="left">최종 점검일</TableCell>
+                                        <TableCell align="left">{repairDoneStatus[equipment.code]}</TableCell>
                                         <TableCell align="left">{repairStatus[equipment.code]}</TableCell>
                                         <TableCell align="left">
                                             <Button variant="text" onClick={() => handleFixConfirmation(equipment)}>
