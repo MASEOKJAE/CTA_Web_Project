@@ -29,12 +29,13 @@ import { useAuth } from '/home/ubuntu/WorkSpace/CTA_Web_Project/src/layouts/dash
 // ----------------------------------------------------------------------
 
 const TABLE_HEAD = [
+    { id: 'stateLight', label: '', alignRight: false },
     { id: 'name', label: '코드', alignRight: false },
     { id: 'company', label: '설비명', alignRight: false },
-    { id: 'role', label: '설치일자', alignRight: false },
-    { id: 'isVerified', label: '설치위치', alignRight: false },
+    { id: 'role', label: '설치 일자', alignRight: false },
+    { id: 'isVerified', label: '설치 위치', alignRight: false },
     { id: 'latestInspectionDate', label: '최종 점검일', alignRight: false },
-    { id: 'isDefective', label: '수리필요여부', alignRight: false },
+    { id: 'isDefective', label: '수리 필여부', alignRight: false },
     { id: 'repairmentHistory', label: '수리 이력', alignRight: false },
     { id: 'inspectionHistory', label: '설비 상태', alignRight: false },
     { id: 'qr', label: 'QR code', alignRight: false },
@@ -68,7 +69,7 @@ export default function DashboardAppPage() {
         setRowsPerPage(parseInt(event.target.value, 10));
         setPage(0);
     };
-    
+
 
     const navigate = useNavigate();
 
@@ -174,13 +175,13 @@ export default function DashboardAppPage() {
 
     const handleCloseCreate = async (row) => {
         let code;
-    
+
         if (row && row.installationDate) {
             row.installationDate = new Date(row.installationDate).toISOString().split('T')[0];
-    
+
             // Check if the code already exists in the table
             const codeExistsInTable = equipmentData.some(equipment => equipment.code === row.code);
-    
+
             if (codeExistsInTable) {
                 // If the code already exists in the table, show a notification and do not proceed with adding
                 toast.error(`Equipment with code ${row.code} already exists in the table.`);
@@ -188,18 +189,18 @@ export default function DashboardAppPage() {
                 try {
                     // Add the equipment to the table (assuming the table is updated locally)
                     setEquipmentData([...equipmentData, row]);
-    
+
                     // Add the equipment to the database
                     const response = await axios.post('/api/equipment', row, {
                         headers: {
                             'Content-Type': 'application/json',
                         },
                     });
-    
+
                     const data = response.data;
-    
+
                     console.log('Equipment added successfully:', data.message);
-    
+
                     code = data.result.code;
                 } catch (error) {
                     console.error('Error adding equipment:', error);
@@ -207,7 +208,7 @@ export default function DashboardAppPage() {
                     if (code) {
                         handleQrCodeConfirmation(code);
                     }
-    
+
                     // Close the DialogTag when the process is complete
                     setOpenCreate(false);
                 }
@@ -217,7 +218,7 @@ export default function DashboardAppPage() {
             setOpenCreate(false);
         }
     };
-    
+
 
     const handleItemDelete = (id) => {
         axios.delete(`/api/equipment/${id}`)
@@ -256,8 +257,44 @@ export default function DashboardAppPage() {
     }
 
     const handleFixConfirmation = async (equipment) => {
-        navigate('/dashboard/fixhistory' , { state: { equipment }, replace: true });
+        navigate('/dashboard/fixhistory', { state: { equipment }, replace: true });
     }
+
+    // 상태에 따른 색상을 반환하는 함수를 만듭니다.
+    const getStatusColor = (status) => {
+        switch (status) {
+            case '점검 필요':
+                return 'red';
+            case '현장 확인 필요':
+                return 'orange';
+            case '정상':
+                return 'green';
+            default:
+                return 'gray';
+        }
+    };
+
+    // 상태에 따른 원을 표시하는 컴포넌트를 만듭니다.
+    const StatusIndicator = ({ status }) => {
+        const color = getStatusColor(status);
+        return (
+            <div
+                style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    width: '15px',
+                    height: '15px',
+                    borderRadius: '50%',
+                    backgroundColor: color,
+                    boxShadow: '0px 0px 5px 0px rgba(0, 0, 0, 0.3)', // 그림자 효과 추가
+                    border: '1px solid #ddd', // 테두리 추가
+                    // padding: '15px', // 패딩 추가
+                }}
+            />
+        );
+    };
+
 
     // 해당 설비 state 상세 정보 확인
     const handleStateConfirmation = async (equipment) => {
@@ -357,7 +394,7 @@ export default function DashboardAppPage() {
                         handleClose={handleCloseCreate}
                         confirm={'추가하기'}
                     />}
-                    
+
                 </Stack>
 
                 <Card>
@@ -370,6 +407,7 @@ export default function DashboardAppPage() {
                             <TableBody>
                                 {equipmentData.map((equipment, index) => (
                                     <TableRow key={index}>
+                                        <TableCell><StatusIndicator status={repairStatus[equipment.code]} /></TableCell>
                                         <TableCell>{equipment.code}</TableCell>
                                         <TableCell>{equipment.name}</TableCell>
                                         <TableCell>{new Date(equipment.installationDate).toLocaleString()}</TableCell>
@@ -408,14 +446,14 @@ export default function DashboardAppPage() {
                         </Table>
                     </TableContainer>
                     <TablePagination
-                            rowsPerPageOptions={[5, 10, 25]}
-                            component="div"
-                            count={filteredEquipmentData.length}
-                            rowsPerPage={rowsPerPage}
-                            page={page}
-                            onPageChange={handleChangePage}
-                            onRowsPerPageChange={handleChangeRowsPerPage}
-                        />
+                        rowsPerPageOptions={[5, 10, 25]}
+                        component="div"
+                        count={filteredEquipmentData.length}
+                        rowsPerPage={rowsPerPage}
+                        page={page}
+                        onPageChange={handleChangePage}
+                        onRowsPerPageChange={handleChangeRowsPerPage}
+                    />
                 </Card>
             </Container>
             {editRow && <DialogTag

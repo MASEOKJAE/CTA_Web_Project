@@ -43,7 +43,7 @@ const StyledContent = styled('div')(({ theme }) => ({
 
 export default function LoginPage() {
   const mdUp = useResponsive('up', 'md');
-  const [username, setUsername] = useState('');
+  const [id, setId] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
@@ -52,7 +52,7 @@ export default function LoginPage() {
   const handleLogin = async () => {
     try {
       const response = await axios.post('/api/login', {
-        username,
+        id,
         password,
       });
 
@@ -98,11 +98,11 @@ export default function LoginPage() {
 
             <Stack spacing={2} sx={{ mt: 3 }}>
               <TextField
-                label="Username"
+                label="Id"
                 fullWidth
                 variant="outlined"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                value={id}
+                onChange={(e) => setId(e.target.value)}
               />
               <TextField
                 label="Password"

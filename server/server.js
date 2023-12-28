@@ -424,11 +424,11 @@ app.delete('/api/repairs/:id', (req, res) => {
 
 // 로그인
 app.post('/api/login', (req, res) => {
-  const { username, password } = req.body;
+  const { id, password } = req.body;
 
   // Perform authentication against the MySQL database
-  const query = `SELECT * FROM userInfo WHERE username = ? AND password = ?`;
-  db.query(query, [username, password], (err, results) => {
+  const query = `SELECT * FROM userInfo WHERE id = ? AND password = ?`;
+  db.query(query, [id, password], (err, results) => {
     if (err) {
       console.error('MySQL query error:', err);
       res.status(500).json({ error: 'Internal Server Error' });
