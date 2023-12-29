@@ -1,11 +1,12 @@
 // DashboardLayout.js
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Link, Outlet, Navigate, useLocation } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import { Button, Stack } from '@mui/material';
-import { createBrowserHistory } from 'history'; // Import the history library
-import ctaLogo from './cta_logo.png';
-import { useAuth } from './AuthContext';
+// import ctaLogo from '../../../public/assets/ctalogo.png';
+import { useDispatch, useSelector } from 'react-redux';
+import { logoutUser } from '../../redux/actions/userActions';
+import { useNavigate } from 'react-router-dom';
 
 const APP_BAR_MOBILE = 64;
 const APP_BAR_DESKTOP = 92;
@@ -34,36 +35,36 @@ const Logo = styled('img')({
   cursor: 'pointer',
 });
 
-const history = createBrowserHistory(); // Create a history object
-
 export default function DashboardLayout() {
-  const { isLoggedIn, logout } = useAuth();
+  const isLoggedIn = useSelector((state) => state.user !== null);
+  const dispatch = useDispatch();
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Redirect to login if not logged in
     if (!isLoggedIn && location.pathname !== '/login') {
-      history.replace('/login');
+      // You can dispatch an action here to handle the redirection or any other logic
+      // dispatch(yourAction());
+      // For now, let's redirect using Navigate
+      navigate('/login');
     }
-    else{
-      history.replace('/dashboard/home');
-    }
+    // Add your other conditions or logic as needed
   }, [isLoggedIn, location.pathname]);
 
   const handleLogout = () => {
-    logout();
+    // Dispatch the action to logout
+    dispatch(logoutUser());
+    // Redirect to the login page
+    navigate('/login');
   };
-
-  if (!isLoggedIn) {
-    return <Navigate to="/login" />;
-  }
 
   return (
     <StyledRoot>
       <Main>
         <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
           <Link to="/dashboard/home">
-            <Logo src={ctaLogo} alt="CTA Logo" />
+            <Logo src="/assets/ctalogo.png" alt="CTA Logo" />
           </Link>
           <Button onClick={handleLogout}>로그아웃</Button>
         </Stack>

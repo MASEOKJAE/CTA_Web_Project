@@ -9,7 +9,9 @@ import { Link, Container, Typography, Divider, Stack, Button, TextField } from '
 import useResponsive from '../hooks/useResponsive';
 // components
 import Iconify from '../components/iconify';
-import { useAuth } from '/home/ubuntu/WorkSpace/CTA_Web_Project/src/layouts/dashboard/AuthContext.js';
+import { setUser } from '../redux/actions/userActions';
+import store from '../redux/store';
+import useAuth from '../auth/useAuth';
 
 // ----------------------------------------------------------------------
 
@@ -39,6 +41,12 @@ const StyledContent = styled('div')(({ theme }) => ({
   padding: theme.spacing(12, 0),
 }));
 
+const Logo = styled('img')({
+  maxWidth: 350,
+  maxHeight: 350,
+  cursor: 'pointer',
+});
+
 // ----------------------------------------------------------------------
 
 export default function LoginPage() {
@@ -47,20 +55,24 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
-  const { login } = useAuth();
+
+  // useAuth 훅을 통해 user, login, logout을 가져옴
+  const { user, login, logout } = useAuth();
 
   const handleLogin = async () => {
     try {
-      const response = await axios.post('/api/login', {
+      const credentials = {
         id,
         password,
-      });
-
+      };
+      const response = await axios.post('/api/login', credentials);
       // Check the response for success or failure
       if (response.data.success) {
         // Login successful
-        login();
+        console.log('Login successful. User:', response.data.user);
+        login(response.data.user);
         setMessage('Login successful');
+        console.log('넘어갑니다');
         navigate('/dashboard/home');
       } else {
         // Login failed
@@ -77,23 +89,23 @@ export default function LoginPage() {
   return (
     <>
       <Helmet>
-        <title> Login | Minimal UI </title>
+        <title> CTA | Login </title>
       </Helmet>
 
       <StyledRoot>
         {mdUp && (
           <StyledSection>
-            <Typography variant="h3" sx={{ px: 5, mt: 10, mb: 5 }}>
-              CTA 설비 관리
+            <Logo src="/assets/ctalogo.png" alt="CTA Logo" />
+            <Typography variant="h2" sx={{ px: 5, mt: 10, mb: 5 }}>
+              CTA 설비 관리 시스템
             </Typography>
-            <img src="./ctalogo.png" alt="login" />
           </StyledSection>
         )}
 
         <Container maxWidth="sm">
           <StyledContent>
             <Typography variant="h4" gutterBottom>
-              Sign in to Minimal
+              CTA 로그인
             </Typography>
 
             <Stack spacing={2} sx={{ mt: 3 }}>

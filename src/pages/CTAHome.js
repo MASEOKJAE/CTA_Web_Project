@@ -24,7 +24,8 @@ import ImageModal from './ImageModal';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './CTAHome.css';
-import { useAuth } from '/home/ubuntu/WorkSpace/CTA_Web_Project/src/layouts/dashboard/AuthContext.js';
+import { useSelector, useDispatch } from 'react-redux';
+import useAuth from '../auth/useAuth';
 
 // ----------------------------------------------------------------------
 
@@ -55,7 +56,18 @@ export default function DashboardAppPage() {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(5);
     const [searchTerm, setSearchTerm] = useState('');
+    const navigate = useNavigate();
+    const dispatch = useDispatch();
     const { logout } = useAuth();
+    const user = useSelector((state) => state.user);
+
+    // user 정보가 없을 경우 로그인 페이지로 리다이렉트 또는 다른 처리
+    useEffect(() => {
+        console.log('User in CTAHome:', user);
+        if (!user) {
+            navigate('/login');
+        }
+    }, [user, navigate]);
 
     const filteredEquipmentData = equipmentData.filter((equipment) =>
         equipment.code.toLowerCase().includes(searchTerm.toLowerCase())
@@ -69,9 +81,6 @@ export default function DashboardAppPage() {
         setRowsPerPage(parseInt(event.target.value, 10));
         setPage(0);
     };
-
-
-    const navigate = useNavigate();
 
     useEffect(() => {
         const handleScroll = () => {
@@ -379,7 +388,7 @@ export default function DashboardAppPage() {
             <Container>
                 <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
                     <Typography variant="h4" gutterBottom>
-                        안녕하세요 김소현님
+                        안녕하세요, {user.username} 님
                     </Typography>
                     {/* <Button className="addEquipmentButton" variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={handleClickOpenCreate}>
                         설비 추가

@@ -437,7 +437,8 @@ app.post('/api/login', (req, res) => {
 
     if (results.length > 0) {
       // Authentication successful
-      res.json({ success: true, message: 'Login successful' });
+      const user = results[0];
+      res.json({ success: true, message: 'Login successful', user });
     } else {
       // Authentication failed
       res.status(401).json({ error: 'Invalid credentials' });

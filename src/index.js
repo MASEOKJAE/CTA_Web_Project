@@ -1,13 +1,19 @@
+// index.js
 import React from 'react';
-import ReactDOM from 'react-dom';
-import { AuthProvider } from '/home/ubuntu/WorkSpace/CTA_Web_Project/src/layouts/dashboard/AuthContext.js';
+import ReactDOM from 'react-dom/client';
+import { Provider } from 'react-redux';
+import store from './redux/store';
 import App from './App';
 
-ReactDOM.render(
+const rootElement = document.getElementById('root');
+
+// createRoot이 사용 가능한지 확인 (React 18+)
+const root = rootElement.createRoot ? rootElement.createRoot() : ReactDOM.createRoot(rootElement);
+
+root.render(
   <React.StrictMode>
-    <AuthProvider>
+    <Provider store={store}>
       <App />
-    </AuthProvider>
-  </React.StrictMode>,
-  document.getElementById('root')
+    </Provider>
+  </React.StrictMode>
 );
