@@ -8,6 +8,11 @@ const { exec } = require('child_process');
 const app = express();
 const PORT = process.env.PORT || 4001;
 const bodyParser = require('body-parser');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');  // 비밀번호 해시를 위한 패키지 
+require('dotenv').config({ path: '../.env' });
+const SECRET_KEY = process.env.SECRET_KEY;
+
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -85,39 +90,6 @@ app.post('/runQRpy', (req, res) => {
     res.status(500).send(data.toString());
   });
 });
-// New endpoint to retrieve QR code image data
-// app.get('/api/getQRCodeImage/:code', (req, res) => {
-//   const code = req.params.code;
-
-//   // Replace 'your_database_config' with your actual database configuration
-//   const connection = mysql.createConnection({
-//     host: 'your_database_host',
-//     user: 'your_database_user',
-//     password: 'your_database_password',
-//     database: 'your_database_name',
-//   });
-
-
-//   connection.connect();
-
-//   const query = `SELECT qr_code FROM equipment WHERE code = ?`;
-
-//   connection.query(query, [code], (error, results) => {
-//     if (error) {
-//       console.error('Error retrieving QR code image:', error);
-//       res.status(500).send('Error retrieving QR code image');
-//     } else {
-//       if (results.length > 0 && results[0].qr_code) {
-//         // Send the QR code image data
-//         res.send(results[0].qr_code);
-//       } else {
-//         res.status(404).send('QR code image not found');
-//       }
-//     }
-
-//     connection.end();
-//   });
-// });
 
 app.post('/runQRpy', async (req, res) => {
   const { code, name, installationDate, location } = req.body;
@@ -215,7 +187,7 @@ app.get('/api/equipment', (req, res) => {
       res.status(500).send('Internal Server Error');
     } else {
       res.send(data);
-      console.log(data)
+      // console.log(data)
     }
   });
 });
@@ -424,11 +396,10 @@ app.delete('/api/repairs/:id', (req, res) => {
 
 // 로그인
 app.post('/api/login', (req, res) => {
-  const { id, password } = req.body;
+  const { username, password } = req.body;
 
-  // Perform authentication against the MySQL database
-  const query = `SELECT * FROM userInfo WHERE id = ? AND password = ?`;
-  db.query(query, [id, password], (err, results) => {
+  const query = `SELECT * FROM userInfo WHERE username = ?`;
+  db.query(query, [username], async (err, results) => {
     if (err) {
       console.error('MySQL query error:', err);
       res.status(500).json({ error: 'Internal Server Error' });
@@ -436,13 +407,86 @@ app.post('/api/login', (req, res) => {
     }
 
     if (results.length > 0) {
-      // Authentication successful
       const user = results[0];
-      res.json({ success: true, message: 'Login successful', user });
+
+      const match = await bcrypt.compare(password, user.password);
+      if (match) {
+        const accessToken = jwt.sign({ id: user.id }, SECRET_KEY, { expiresIn: '24h' });
+        // 디버깅: 로그인 성공 시 서버 콘솔에 토큰 및 사용자 정보 출력
+        console.log('Login successful. User:', user);
+        console.log('Access Token:', accessToken);
+
+        res.json({ success: true, message: 'Login successful', user, accessToken });
+      } else {
+        // 디버깅: 비밀번호 불일치 시 서버 콘솔에 에러 메시지 출력
+        console.error('Invalid credentials. Password does not match.');
+        res.status(401).json({ error: 'Invalid credentials' });
+      }
     } else {
-      // Authentication failed
+      // 디버깅: 사용자가 존재하지 않을 때 서버 콘솔에 에러 메시지 출력
+      console.error('Invalid credentials. User not found.');
       res.status(401).json({ error: 'Invalid credentials' });
     }
+  });
+});
+
+
+// 사용자 정보 가져오기
+app.get('/api/user', (req, res) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    console.error('No token provided');
+    res.status(401).json({ error: 'No token provided' });
+    return;
+  }
+
+  jwt.verify(token, SECRET_KEY, (err, decoded) => {
+    if (err) {
+      console.error('Invalid token', err);
+      res.status(401).json({ error: 'Invalid token' });
+      return;
+    }
+
+    const query = `SELECT * FROM userInfo WHERE id = ?`;
+    db.query(query, [decoded.id], (err, results) => {
+      if (err || results.length === 0) {
+        console.error('Invalid user or database error', err);
+        res.status(401).json({ error: 'Invalid user' });
+        return;
+      }
+
+      const user = results[0];
+      console.log('User info retrieved successfully:', user);
+      res.json({ user });
+    });
+  });
+});
+
+// 토큰 갱신
+app.post('/silent-refresh', (req, res) => {
+  const { token } = req.body;
+
+  jwt.verify(token, SECRET_KEY, async (err, decoded) => {
+    if (err) {
+      console.error('Invalid token', err);
+      res.status(401).json({ error: 'Invalid token' });
+      return;
+    }
+
+    const query = `SELECT * FROM userInfo WHERE id = ?`;
+    db.query(query, [decoded.id], (err, results) => {
+      if (err || results.length === 0) {
+        console.error('Invalid user or database error', err);
+        res.status(401).json({ error: 'Invalid user' });
+        return;
+      }
+
+      const newToken = jwt.sign({ id: decoded.id }, SECRET_KEY, { expiresIn: '24h' });
+      console.log('Token refreshed successfully:', newToken);
+      res.json({ accessToken: newToken });
+    });
   });
 });
 

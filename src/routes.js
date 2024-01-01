@@ -11,11 +11,19 @@ import ProductsPage from './pages/ProductsPage';
 import CTAHome from './pages/CTAHome';
 import FixHistory from './pages/RepairHistory';
 import StateHistory from './pages/StateHistory';
+import useAuth from './auth/useAuth';
 
 // ----------------------------------------------------------------------
 
 export default function Router() {
+  const { user } = useAuth();
+
   const routes = useRoutes([
+    {
+      path: '/',
+      element: <Navigate to="/login" replace />,
+      index: true,
+    },
     {
       path: '/dashboard',
       element: <DashboardLayout />,

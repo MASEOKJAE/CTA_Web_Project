@@ -1,12 +1,9 @@
 // DashboardLayout.js
 import { useEffect } from 'react';
-import { Link, Outlet, Navigate, useLocation } from 'react-router-dom';
+import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import { Button, Stack } from '@mui/material';
-// import ctaLogo from '../../../public/assets/ctalogo.png';
-import { useDispatch, useSelector } from 'react-redux';
-import { logoutUser } from '../../redux/actions/userActions';
-import { useNavigate } from 'react-router-dom';
+import useAuth from '../../auth/useAuth';
 
 const APP_BAR_MOBILE = 64;
 const APP_BAR_DESKTOP = 92;
@@ -36,27 +33,16 @@ const Logo = styled('img')({
 });
 
 export default function DashboardLayout() {
-  const isLoggedIn = useSelector((state) => state.user !== null);
-  const dispatch = useDispatch();
-  const location = useLocation();
   const navigate = useNavigate();
+  const { logout } = useAuth(); // useAuth 훅에서 user와 logout을 가져옴
 
-  useEffect(() => {
-    // Redirect to login if not logged in
-    if (!isLoggedIn && location.pathname !== '/login') {
-      // You can dispatch an action here to handle the redirection or any other logic
-      // dispatch(yourAction());
-      // For now, let's redirect using Navigate
-      navigate('/login');
+  const handleLogout = async () => {
+    try {
+      logout(); // useAuth 훅에서 제공하는 logout 함수 호출
+      navigate('/login'); // 로그아웃 후 로그인 페이지로 이동
+    } catch (error) {
+      console.error('로그아웃 중 오류 발생:', error);
     }
-    // Add your other conditions or logic as needed
-  }, [isLoggedIn, location.pathname]);
-
-  const handleLogout = () => {
-    // Dispatch the action to logout
-    dispatch(logoutUser());
-    // Redirect to the login page
-    navigate('/login');
   };
 
   return (
