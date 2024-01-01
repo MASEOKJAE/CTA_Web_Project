@@ -16,6 +16,7 @@ import {
     TableContainer,
     TextField,
     TablePagination,
+    Grid,
 } from '@mui/material';
 import { Helmet } from 'react-helmet-async';
 import Iconify from '../components/iconify';
@@ -40,6 +41,7 @@ const TABLE_HEAD = [
     { id: 'edit', label: '수정', alignRight: false },
     { id: 'delete', label: '삭제', alignRight: false },
 ];
+const ITEMS_PER_PAGE = 10;
 
 export default function CTAHomePage() {
     const [openCreate, setOpenCreate] = useState(false);
@@ -51,18 +53,10 @@ export default function CTAHomePage() {
     const [isQrCodeModalOpen, setQrCodeModalOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
     const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(5);
+    const [rowsPerPage, setRowsPerPage] = useState(15);
     const [searchTerm, setSearchTerm] = useState('');
     const navigate = useNavigate();
     const { user } = useAuth(); // useAuth 훅에서 user 정보 가져오기
-
-    // user 정보가 없을 경우 로그인 페이지로 리다이렉트 또는 다른 처리
-    // useEffect(() => {
-    //     console.log('User in CTAHome:', user);
-    //     if (!user) {
-    //         navigate('/login');
-    //     }
-    // }, [user, navigate]);
 
     const filteredEquipmentData = equipmentData.filter((equipment) =>
         equipment.code.toLowerCase().includes(searchTerm.toLowerCase())
@@ -126,10 +120,10 @@ export default function CTAHomePage() {
                 const statusData = {};
 
                 for (const equipment of equipmentData) {
-                    const statusDoneResponse = await axios.get(`/api/repairs/${equipment.code}`);
+                    const statusDoneResponse = await axios.get(`/api/repairs?code=${equipment.code}`);
                     const statusInfo = statusDoneResponse.data;
 
-                    if (statusInfo.length > 0) {
+                    if (statusInfo.length > 0 && statusInfo[statusInfo.length - 1].repairDate) {
                         const latestStatus = statusInfo[statusInfo.length - 1].repairDate;
                         statusData[equipment.code] = latestStatus;
                     } else {
@@ -177,6 +171,76 @@ export default function CTAHomePage() {
         }
     };
 
+    
+    const handleQrCodeConfirmation = async (code, equipmentData) => {
+        try {
+            // Fetch the QR code image from the server
+            const response = await fetch(`/api/getQRCodeImage/${code}`);
+
+            if (response.ok) {
+                // If the response is successful, set the QR code image and open the modal
+                const imageBlob = await response.blob();
+                const qrCodeImageURL = URL.createObjectURL(imageBlob);
+
+                setQrCodeImage(qrCodeImageURL);
+                setQrCodeModalOpen(true);
+
+                // Save the QR code image to the database (you may need to adjust this logic based on your backend)
+                await axios.put(`/api/equipment/${code}`, {
+                    qr_code: qrCodeImageURL,
+                    // ... other fields from equipmentData that you want to save
+                });
+            } else {
+                // If there is an error in fetching the image, log an error
+                console.error('Error fetching QR code image:', response.statusText);
+            }
+        } catch (error) {
+            // If there is a general error, log an error
+            console.error('Error fetching QR code image:', error);
+        }
+    };
+
+    // const handleCloseCreate = async (row) => {
+    //     let code;
+    
+    //     if (row && row.installationDate) {
+    //         row.installationDate = new Date(row.installationDate).toISOString().split('T')[0];
+    
+    //         const codeExistsInTable = equipmentData.some(equipment => equipment.code === row.code);
+    
+    //         if (codeExistsInTable) {
+    //             toast.error(`Equipment with code ${row.code} already exists in the table.`);
+    //         } else {
+    //             try {
+    //                 setEquipmentData([...equipmentData, row]);
+    
+    //                 const response = await axios.post('/api/equipment', row, {
+    //                     headers: {
+    //                         'Content-Type': 'application/json',
+    //                     },
+    //                 });
+    
+    //                 const data = response.data;
+    //                 console.log('Equipment added successfully:', data.message);
+    
+    //                 code = data.result.code;
+    
+    //                 // Trigger QR code generation
+    //                 await generateQrCodeAndHandleModal(code);
+    
+    //             } catch (error) {
+    //                 console.error('Error adding equipment:', error);
+    //             } finally {
+    //                 if (code) {
+    //                     await handleQrCodeConfirmation(code);
+    //                 }
+    //                 setOpenCreate(false);
+    //             }
+    //         }
+    //     } else {
+    //         setOpenCreate(false);
+    //     }
+    // };
     const handleCloseCreate = async (row) => {
         let code;
 
@@ -223,6 +287,69 @@ export default function CTAHomePage() {
         }
     };
 
+      
+    const generateQrCodeAndHandleModal = async (code) => {
+        try {
+            const response = await axios.post('/runQRpy', {
+                code,
+            });
+    
+            console.log(response.data);
+    
+        } catch (error) {
+            console.error('Error generating QR code:', error);
+        }
+    };
+    
+    const generateQRCodeAndSave = async (row, code) => {
+        try {
+            // Make an Axios POST request to trigger QR code generation
+            const qrCodeResponse = await axios.post('/runQRpy', {
+                code: row.code,
+                name: row.name,
+                installationDate: row.installationDate,
+                location: row.location,
+            });
+    
+            // Handle the response if needed
+            console.log(qrCodeResponse.data);
+    
+            if (qrCodeResponse.data.success) {
+                // Fetch the QR code image from the server
+                const qrImageResponse = await fetch(`/api/getQRCodeImage/${code}`);
+    
+                if (qrImageResponse.ok) {
+                    // If the response is successful, set the QR code image and open the modal
+                    const imageBlob = await qrImageResponse.blob();
+                    const qrCodeImageURL = URL.createObjectURL(imageBlob);
+    
+                    // Save the QR code image to the database
+                    await axios.put(`/api/equipment/${code}`, {
+                        qr_code: qrCodeImageURL,
+                        // ... other fields from equipmentData that you want to save
+                    });
+    
+                    // Open the modal or take further actions as needed
+                    setQrCodeImage(qrCodeImageURL);
+                    setQrCodeModalOpen(true);
+                } else {
+                    console.error('Error fetching QR code image:', qrImageResponse.statusText);
+                }
+            } else {
+                console.error('QR code generation failed:', qrCodeResponse.data.error);
+                // Log the specific error details
+                console.error('QR code generation error details:', qrCodeResponse.data.details || 'No error details available');
+                // Handle the error (e.g., show an error message to the user)
+            }
+        } catch (error) {
+            console.error('Error triggering QR code generation:', error);
+            // Log the error details if available
+            console.error('Error details:', error.response ? error.response.data : 'No error details available');
+            // Handle the error (e.g., show an error message to the user)
+        }
+    };    
+    
+    
 
     const handleItemDelete = (id) => {
         axios.delete(`/api/equipment/${id}`)
@@ -284,20 +411,23 @@ export default function CTAHomePage() {
         return (
             <div
                 style={{
-                    display: 'flex',
+                    // display: 'flex',
                     justifyContent: 'center',
                     alignItems: 'center',
-                    width: '15px',
-                    height: '15px',
+                    width: '5px',
+                    height: '5px',
+                    maxWidth: '5px', // Set maximum width
+                    maxHeight: '5px', // Set maximum height
                     borderRadius: '50%',
                     backgroundColor: color,
-                    boxShadow: '0px 0px 5px 0px rgba(0, 0, 0, 0.3)', // 그림자 효과 추가
-                    border: '1px solid #ddd', // 테두리 추가
-                    // padding: '15px', // 패딩 추가
+                    boxShadow: '0px 0px 5px 0px rgba(0, 0, 0, 0.3)',
+                    border: '1px solid #ddd',
+                    padding: '5px', // Adjust padding as needed
                 }}
             />
         );
     };
+
 
 
     // 해당 설비 state 상세 정보 확인
@@ -313,34 +443,6 @@ export default function CTAHomePage() {
             }
         } catch (error) {
             console.error('Error fetching state information:', error);
-        }
-    };
-
-    const handleQrCodeConfirmation = async (code, equipmentData) => {
-        try {
-            // Fetch the QR code image from the server
-            const response = await fetch(`/api/getQRCodeImage/${code}`);
-
-            if (response.ok) {
-                // If the response is successful, set the QR code image and open the modal
-                const imageBlob = await response.blob();
-                const qrCodeImageURL = URL.createObjectURL(imageBlob);
-
-                setQrCodeImage(qrCodeImageURL);
-                setQrCodeModalOpen(true);
-
-                // Save the QR code image to the database (you may need to adjust this logic based on your backend)
-                await axios.put(`/api/equipment/${code}`, {
-                    qr_code: qrCodeImageURL,
-                    // ... other fields from equipmentData that you want to save
-                });
-            } else {
-                // If there is an error in fetching the image, log an error
-                console.error('Error fetching QR code image:', response.statusText);
-            }
-        } catch (error) {
-            // If there is a general error, log an error
-            console.error('Error fetching QR code image:', error);
         }
     };
 
@@ -373,22 +475,15 @@ export default function CTAHomePage() {
 
         return () => clearInterval(intervalId);
     }, []);
-    const changePage = (event, newPage) => {
-        console.log('New Page:', newPage);
-        setPage(newPage);
+
+    const getCurrentPageData = () => {
+        const startIndex = page * rowsPerPage;
+        const endIndex = startIndex + rowsPerPage;
+        return filteredEquipmentData.slice(startIndex, endIndex);
     };
-    
-    const changeRowsPerPage = (event) => {
-        const newRowsPerPage = parseInt(event.target.value, 10);
-        console.log('New Rows Per Page:', newRowsPerPage);
-        setRowsPerPage(newRowsPerPage);
-        setPage(0);  // 페이지를 첫 페이지로 설정
-    };
-    useEffect(() => {
-        console.log('Current Page:', page);
-        console.log('Current Rows Per Page:', rowsPerPage);
-    }, [page, rowsPerPage]);
-    
+
+    const totalPages = Math.ceil(filteredEquipmentData.length / rowsPerPage);
+
 
     return (
         <>
@@ -425,7 +520,8 @@ export default function CTAHomePage() {
                             />
 
                             <TableBody>
-                                {equipmentData.map((equipment, index) => (
+                                {getCurrentPageData().map((equipment, index) => (
+                                    // {equipmentData.map((equipment, index) => (
                                     <TableRow key={index}>
                                         <TableCell><StatusIndicator status={repairStatus[equipment.code]} /></TableCell>
                                         <TableCell>{equipment.code}</TableCell>
@@ -460,21 +556,27 @@ export default function CTAHomePage() {
                                     </TableRow>
                                 ))}
                             </TableBody>
+
                             {isQrCodeModalOpen && (
                                 <ImageModal isOpen={isQrCodeModalOpen} onClose={() => setQrCodeModalOpen(false)} images={[qrCodeImage]} />
                             )}
                         </Table>
+                        <Stack direction="row" justifyContent="center" alignItems="center" mt={2}>
+                            <Button
+                                disabled={page === 0}
+                                onClick={() => setPage((prevPage) => prevPage - 1)}
+                            >
+                                이전
+                            </Button>
+                            <Typography>{`${page + 1} / ${totalPages}`}</Typography>
+                            <Button
+                                disabled={page === totalPages - 1}
+                                onClick={() => setPage((prevPage) => prevPage + 1)}
+                            >
+                                다음
+                            </Button>
+                        </Stack>
                     </TableContainer>
-                    <TablePagination
-                        rowsPerPageOptions={[5, 10, 25]}
-                        component="div"
-                        count={filteredEquipmentData.length}  // 정확한 행 수로 설정
-                        rowsPerPage={rowsPerPage}
-                        page={page}
-                        onPageChange={changePage}
-                        onRowsPerPageChange={changeRowsPerPage}
-                    />
-
 
                 </Card>
             </Container>

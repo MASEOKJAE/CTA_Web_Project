@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useLocation } from 'react-router-dom';
 import { Container, Typography, Table, TableContainer, TableHead, TableBody, TableRow, TableCell, Paper, Box, Button, Modal } from '@mui/material';
-import { styled } from '@mui/system';
+import { styled, Stack } from '@mui/system';
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   fontWeight: 'bold',
@@ -19,6 +19,10 @@ const StateHistoryPage = () => {
   const [open, setOpen] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
 
+  const [page, setPage] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
+  const rowsPerPage = 10;
+
   if (!state || !state.equipment || !state.stateInfo) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -27,21 +31,35 @@ const StateHistoryPage = () => {
     );
   }
 
+  const filteredStateData = stateInfo
+    .filter((state) =>
+      state.name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .reverse();  // 배열의 순서를 뒤집습니다.
+
+  const getCurrentPageData = () => {
+    const startIndex = page * rowsPerPage;
+    const endIndex = startIndex + rowsPerPage;
+    return filteredStateData.slice(startIndex, endIndex);
+  };
+
+  const totalPages = Math.ceil(filteredStateData.length / rowsPerPage);
+
   return (
     <>
       <Helmet>
-        <title>CTA - History</title>
+        <title>CTA 설비 상태</title>
       </Helmet>
 
       <Container maxWidth="md" sx={{ mt: 4 }}>
         <Typography variant="h4" gutterBottom component="div">
-          Equipment Information
+          설비 정보
         </Typography>
         <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-          <Typography variant="body1" gutterBottom>Code: {equipment.code}</Typography>
-          <Typography variant="body1" gutterBottom>Name: {equipment.name}</Typography>
-          <Typography variant="body1" gutterBottom>Installation Date: {new Date(equipment.installationDate).toLocaleString()}</Typography>
-          <Typography variant="body1" gutterBottom>Location: {equipment.location}</Typography>
+          <Typography variant="body1" gutterBottom>코드: {equipment.code}</Typography>
+          <Typography variant="body1" gutterBottom>설비명: {equipment.name}</Typography>
+          <Typography variant="body1" gutterBottom>설치 일자: {new Date(equipment.installationDate).toLocaleString()}</Typography>
+          <Typography variant="body1" gutterBottom>위치: {equipment.location}</Typography>
         </Paper>
 
         <Typography variant="h5" gutterBottom component="div">
@@ -59,15 +77,15 @@ const StateHistoryPage = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {stateInfo.map((info, index) => (
+              {getCurrentPageData().map((stateInfo, index) => (
                 <TableRow key={index}>
-                  <TableCell>{info.id}</TableCell>
-                  <TableCell>{info.name}</TableCell>
-                  <TableCell>{info.photoName.split("photo_")[1].split(".jpg")[0]}</TableCell>
-                  <TableCell>{info.status}</TableCell>
+                  <TableCell>{stateInfo.id}</TableCell>
+                  <TableCell>{stateInfo.name}</TableCell>
+                  <TableCell>{stateInfo.photoName.split("photo_")[1].split(".jpg")[0]}</TableCell>
+                  <TableCell>{stateInfo.status}</TableCell>
                   <TableCell>
                     <Button variant="outlined" color="primary" onClick={() => {
-                      const photoPath = info.photoPath.split('CTA_Web_Project/public')[1];
+                      const photoPath = stateInfo.photoPath.split('CTA_Web_Project/public')[1];
                       setSelectedPhoto(photoPath);
                       setOpen(true);
                     }}>확인</Button>
@@ -76,6 +94,21 @@ const StateHistoryPage = () => {
               ))}
             </TableBody>
           </Table>
+          <Stack direction="row" justifyContent="center" alignItems="center" mt={2}>
+            <Button
+              disabled={page === 0}
+              onClick={() => setPage((prevPage) => prevPage - 1)}
+            >
+              이전
+            </Button>
+            <Typography>{`${page + 1} / ${totalPages}`}</Typography>
+            <Button
+              disabled={page === totalPages - 1}
+              onClick={() => setPage((prevPage) => prevPage + 1)}
+            >
+              다음
+            </Button>
+          </Stack>
         </TableContainer>
       </Container>
 

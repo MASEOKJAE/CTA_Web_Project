@@ -104,7 +104,7 @@ function RepairDialogTag(props) {
       </DialogContent>
       <DialogActions>
         <Button onClick={() => props.handleClose()}>취소</Button>
-        <Button onClick={() => props.handleClose(row)}>{props.confirm}</Button>
+        <Button onClick={() => props.handleClose(row)}>확인</Button>
       </DialogActions>
     </Dialog>
   );

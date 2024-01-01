@@ -21,6 +21,10 @@ const RepairHistoryPage = () => {
     const [repairs, setRepairs] = useState([]);
     const [editRow, setEditRow] = useState(null);
 
+    const [page, setPage] = useState(0);
+    const [searchTerm, setSearchTerm] = useState('');
+    const rowsPerPage = 10;
+
     const handleClickOpenCreate = () => {
         setOpenRepair(true);
     }
@@ -43,7 +47,7 @@ const RepairHistoryPage = () => {
     };
 
     useEffect(() => {
-        axios.get(`/api/repairs/${equipment.code}`)
+        axios.get(`/api/repairs?code=${equipment.code}`)
             .then(response => {
                 setRepairs(response.data);
             })
@@ -107,6 +111,20 @@ const RepairHistoryPage = () => {
         setEditRow(null);
     };
 
+    const filteredRepairData = repairs
+        .filter((state) =>
+            state.code.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        .reverse();  // 배열의 순서를 뒤집습니다.
+
+    const getCurrentPageData = () => {
+        const startIndex = page * rowsPerPage;
+        const endIndex = startIndex + rowsPerPage;
+        return filteredRepairData.slice(startIndex, endIndex);
+    };
+
+    const totalPages = Math.ceil(filteredRepairData.length / rowsPerPage);
+
 
     return (
         <>
@@ -117,10 +135,10 @@ const RepairHistoryPage = () => {
                     Equipment Information
                 </Typography>
                 <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-                    <Typography variant="body1" gutterBottom>Code: {equipment.code}</Typography>
-                    <Typography variant="body1" gutterBottom>Name: {equipment.name}</Typography>
-                    <Typography variant="body1" gutterBottom>Installation Date: {new Date(equipment.installationDate).toLocaleString()}</Typography>
-                    <Typography variant="body1" gutterBottom>Location: {equipment.location}</Typography>
+                    <Typography variant="body1" gutterBottom>코드: {equipment.code}</Typography>
+                    <Typography variant="body1" gutterBottom>설비명: {equipment.name}</Typography>
+                    <Typography variant="body1" gutterBottom>설치 일자: {new Date(equipment.installationDate).toLocaleString()}</Typography>
+                    <Typography variant="body1" gutterBottom>설비 위치: {equipment.location}</Typography>
                 </Paper>
                 <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
                     <Typography variant="h5" gutterBottom component="div">
@@ -144,18 +162,18 @@ const RepairHistoryPage = () => {
                     <Table>
                         <TableHead>
                             <TableRow>
-                                <StyledTableCell>ID</StyledTableCell>
-                                <StyledTableCell>Code</StyledTableCell>
-                                <StyledTableCell>Admin</StyledTableCell>
-                                <StyledTableCell>Status</StyledTableCell>
-                                <StyledTableCell>Comment</StyledTableCell>
-                                <StyledTableCell>Photo</StyledTableCell>
-                                <StyledTableCell>Modify</StyledTableCell>
-                                <StyledTableCell>Delete</StyledTableCell>
+                                <StyledTableCell>설비 ID</StyledTableCell>
+                                <StyledTableCell>설비 코드</StyledTableCell>
+                                <StyledTableCell>관리자</StyledTableCell>
+                                <StyledTableCell>설비 상태</StyledTableCell>
+                                <StyledTableCell>특이사항</StyledTableCell>
+                                <StyledTableCell>설비 사진</StyledTableCell>
+                                <StyledTableCell>수정</StyledTableCell>
+                                <StyledTableCell>삭제</StyledTableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {repairs.map((repair, index) => (
+                            {getCurrentPageData().map((repair, index) => (
                                 <TableRow key={index}>
                                     <TableCell>{repair.id}</TableCell>
                                     <TableCell>{repair.code}</TableCell>
@@ -188,6 +206,21 @@ const RepairHistoryPage = () => {
                             ))}
                         </TableBody>
                     </Table>
+                    <Stack direction="row" justifyContent="center" alignItems="center" mt={2}>
+                        <Button
+                            disabled={page === 0}
+                            onClick={() => setPage((prevPage) => prevPage - 1)}
+                        >
+                            이전
+                        </Button>
+                        <Typography>{`${page + 1} / ${totalPages}`}</Typography>
+                        <Button
+                            disabled={page === totalPages - 1}
+                            onClick={() => setPage((prevPage) => prevPage + 1)}
+                        >
+                            다음
+                        </Button>
+                    </Stack>
                 </TableContainer>
             </Container>
             {editRow && <DialogRepair
