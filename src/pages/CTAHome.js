@@ -33,10 +33,10 @@ const TABLE_HEAD = [
     { id: 'role', label: '설치 일자', alignRight: false },
     { id: 'isVerified', label: '설치 위치', alignRight: false },
     { id: 'latestInspectionDate', label: '최종 점검일', alignRight: false },
-    { id: 'isDefective', label: '수리 필여부', alignRight: false },
+    { id: 'isDefective', label: '수리 필요여부', alignRight: false },
     { id: 'repairmentHistory', label: '수리 이력', alignRight: false },
     { id: 'inspectionHistory', label: '설비 상태', alignRight: false },
-    { id: 'qr', label: 'QR code', alignRight: false },
+    { id: 'qr', label: '큐알코드', alignRight: false },
     { id: 'edit', label: '수정', alignRight: false },
     { id: 'delete', label: '삭제', alignRight: false },
 ];
@@ -373,6 +373,22 @@ export default function CTAHomePage() {
 
         return () => clearInterval(intervalId);
     }, []);
+    const changePage = (event, newPage) => {
+        console.log('New Page:', newPage);
+        setPage(newPage);
+    };
+    
+    const changeRowsPerPage = (event) => {
+        const newRowsPerPage = parseInt(event.target.value, 10);
+        console.log('New Rows Per Page:', newRowsPerPage);
+        setRowsPerPage(newRowsPerPage);
+        setPage(0);  // 페이지를 첫 페이지로 설정
+    };
+    useEffect(() => {
+        console.log('Current Page:', page);
+        console.log('Current Rows Per Page:', rowsPerPage);
+    }, [page, rowsPerPage]);
+    
 
     return (
         <>
@@ -416,9 +432,9 @@ export default function CTAHomePage() {
                                         <TableCell>{equipment.name}</TableCell>
                                         <TableCell>{new Date(equipment.installationDate).toLocaleString()}</TableCell>
                                         <TableCell>{equipment.location}</TableCell>
-                                        <TableCell align="left">{repairDoneStatus[equipment.code]}</TableCell>
-                                        <TableCell align="left">{repairStatus[equipment.code]}</TableCell>
-                                        <TableCell align="left">
+                                        <TableCell align="center">{repairDoneStatus[equipment.code]}</TableCell>
+                                        <TableCell align="center">{repairStatus[equipment.code]}</TableCell>
+                                        <TableCell align="center">
                                             <Button variant="text" onClick={() => handleFixConfirmation(equipment)}>
                                                 확인
                                             </Button>
@@ -452,12 +468,14 @@ export default function CTAHomePage() {
                     <TablePagination
                         rowsPerPageOptions={[5, 10, 25]}
                         component="div"
-                        count={filteredEquipmentData.length}
+                        count={filteredEquipmentData.length}  // 정확한 행 수로 설정
                         rowsPerPage={rowsPerPage}
                         page={page}
-                        onPageChange={handleChangePage}
-                        onRowsPerPageChange={handleChangeRowsPerPage}
+                        onPageChange={changePage}
+                        onRowsPerPageChange={changeRowsPerPage}
                     />
+
+
                 </Card>
             </Container>
             {editRow && <DialogTag

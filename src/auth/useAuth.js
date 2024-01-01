@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
 export default function useAuth() {
@@ -36,6 +36,7 @@ export default function useAuth() {
 
   const onLoginSuccess = (response) => {
     const { accessToken } = response.data;
+    setUser(accessToken);
     localStorage.setItem('accessToken', accessToken);
     axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
 
@@ -58,6 +59,28 @@ export default function useAuth() {
       alert('세션이 만료되어 로그아웃 되었습니다. 다시 로그인해주세요.');
     }
   };
+
+   // 애플리케이션 시작 시에 사용자 정보를 서버에서 불러오는 함수
+   const loadUser = async () => {
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) {
+      return;
+    }
+
+    axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+    try {
+      const response = await axios.get('/api/user');
+      setUser(response.data.user);
+      console.log('성공적으로 토큰 업데이트를 완료했습니다 (새로 고침)');
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // 애플리케이션이 시작될 때 사용자 정보를 불러옵니다.
+  useEffect(() => {
+    loadUser();
+  }, []);
 
   return { user, login, logout };
 }

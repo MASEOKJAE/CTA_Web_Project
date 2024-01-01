@@ -51,11 +51,11 @@ const StateHistoryPage = () => {
           <Table>
             <TableHead>
               <TableRow>
-                <StyledTableCell>ID</StyledTableCell>
-                <StyledTableCell>Name</StyledTableCell>
-                <StyledTableCell>Shot Time</StyledTableCell>
-                <StyledTableCell>Status</StyledTableCell>
-                <StyledTableCell>Photo Path</StyledTableCell>
+                <StyledTableCell>설비 ID</StyledTableCell>
+                <StyledTableCell>설비명</StyledTableCell>
+                <StyledTableCell>점검 시간</StyledTableCell>
+                <StyledTableCell>설비 상태</StyledTableCell>
+                <StyledTableCell>설비 사진</StyledTableCell>
               </TableRow>
             </TableHead>
             <TableBody>

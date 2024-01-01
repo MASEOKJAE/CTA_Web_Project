@@ -1,4 +1,3 @@
-// App.js
 import { BrowserRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import ThemeProvider from './theme';

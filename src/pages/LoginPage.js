@@ -49,7 +49,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const { login } = useAuth();
+  const { user, login } = useAuth();
 
   const handleLogin = async () => {
     setLoading(true);
@@ -60,6 +60,7 @@ export default function LoginPage() {
     const loginResult = await login(credentials); // 로그인 성공 여부와 메시지 받기
     setLoading(false);
     if (loginResult.success) { // 로그인 성공 시 홈 화면으로 이동
+      console.log('로그인에 성공했습니다!', user);
       navigate('/dashboard/home');
     } else {
       console.error(loginResult.message);

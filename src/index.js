@@ -7,6 +7,11 @@ axios.defaults.baseURL = "http://52.78.24.85:3000";
 
 axios.defaults.withCredentials = true;
 
+const accessToken = localStorage.getItem('accessToken');
+if (accessToken) {
+  axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+}
+
 const rootElement = document.getElementById('root');
 const root = rootElement.createRoot ? rootElement.createRoot() : ReactDOM.createRoot(rootElement);
 
