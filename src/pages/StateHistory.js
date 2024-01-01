@@ -77,15 +77,15 @@ const StateHistoryPage = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {getCurrentPageData().map((stateInfo, index) => (
+              {getCurrentPageData().map((state, index) => (
                 <TableRow key={index}>
-                  <TableCell>{stateInfo.id}</TableCell>
-                  <TableCell>{stateInfo.name}</TableCell>
-                  <TableCell>{stateInfo.photoName.split("photo_")[1].split(".jpg")[0]}</TableCell>
-                  <TableCell>{stateInfo.status}</TableCell>
+                  <TableCell>{state.id}</TableCell>
+                  <TableCell>{state.name}</TableCell>
+                  <TableCell>{state.photoName.split("photo_")[1].split(".jpg")[0]}</TableCell>
+                  <TableCell>{state.status}</TableCell>
                   <TableCell>
                     <Button variant="outlined" color="primary" onClick={() => {
-                      const photoPath = stateInfo.photoPath.split('CTA_Web_Project/public')[1];
+                      const photoPath = state.photoPath.split('CTA_Web_Project/public')[1];
                       setSelectedPhoto(photoPath);
                       setOpen(true);
                     }}>확인</Button>

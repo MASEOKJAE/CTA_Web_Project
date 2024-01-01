@@ -202,91 +202,101 @@ export default function CTAHomePage() {
 
     // const handleCloseCreate = async (row) => {
     //     let code;
-    
+
     //     if (row && row.installationDate) {
     //         row.installationDate = new Date(row.installationDate).toISOString().split('T')[0];
-    
+
+    //         // Check if the code already exists in the table
     //         const codeExistsInTable = equipmentData.some(equipment => equipment.code === row.code);
-    
+
     //         if (codeExistsInTable) {
+    //             // If the code already exists in the table, show a notification and do not proceed with adding
     //             toast.error(`Equipment with code ${row.code} already exists in the table.`);
     //         } else {
     //             try {
+    //                 // Add the equipment to the table (assuming the table is updated locally)
     //                 setEquipmentData([...equipmentData, row]);
-    
+
+    //                 // Add the equipment to the database
     //                 const response = await axios.post('/api/equipment', row, {
     //                     headers: {
     //                         'Content-Type': 'application/json',
     //                     },
     //                 });
-    
+
     //                 const data = response.data;
+
     //                 console.log('Equipment added successfully:', data.message);
-    
+
     //                 code = data.result.code;
-    
-    //                 // Trigger QR code generation
-    //                 await generateQrCodeAndHandleModal(code);
-    
     //             } catch (error) {
     //                 console.error('Error adding equipment:', error);
     //             } finally {
     //                 if (code) {
-    //                     await handleQrCodeConfirmation(code);
+    //                     handleQrCodeConfirmation(code);
     //                 }
+
+    //                 // Close the DialogTag when the process is complete
     //                 setOpenCreate(false);
     //             }
     //         }
     //     } else {
+    //         // Close the DialogTag when "취소" button is clicked
     //         setOpenCreate(false);
     //     }
     // };
     const handleCloseCreate = async (row) => {
         let code;
-
+    
         if (row && row.installationDate) {
             row.installationDate = new Date(row.installationDate).toISOString().split('T')[0];
-
-            // Check if the code already exists in the table
+    
+            // 디버깅: 행을 테이블에 추가하기 전에 행을 로그로 출력
+            console.log('행 데이터:', row);
+    
+            // 테이블에 코드가 이미 있는지 확인
             const codeExistsInTable = equipmentData.some(equipment => equipment.code === row.code);
-
+    
             if (codeExistsInTable) {
-                // If the code already exists in the table, show a notification and do not proceed with adding
-                toast.error(`Equipment with code ${row.code} already exists in the table.`);
+                // 테이블에 이미 코드가 있다면 알림을 표시하고 추가 작업을 진행하지 않습니다.
+                toast.error(`코드 ${row.code}를 가진 장비는 이미 테이블에 존재합니다.`);
             } else {
                 try {
-                    // Add the equipment to the table (assuming the table is updated locally)
-                    setEquipmentData([...equipmentData, row]);
-
-                    // Add the equipment to the database
+                    // 테이블에 장비 추가 (테이블이 로컬로 업데이트된 것으로 가정)
+                    setEquipmentData(prevData => [...prevData, row]);
+    
+                    // 디버깅: 업데이트된 equipmentData를 로그로 출력
+                    console.log('업데이트된 equipmentData:', equipmentData);
+    
+                    // 장비를 데이터베이스에 추가
                     const response = await axios.post('/api/equipment', row, {
                         headers: {
                             'Content-Type': 'application/json',
                         },
                     });
-
+    
                     const data = response.data;
-
-                    console.log('Equipment added successfully:', data.message);
-
+    
+                    console.log('장비가 성공적으로 추가되었습니다:', data.message);
+    
                     code = data.result.code;
                 } catch (error) {
-                    console.error('Error adding equipment:', error);
+                    console.error('장비 추가 중 오류 발생:', error);
                 } finally {
                     if (code) {
                         handleQrCodeConfirmation(code);
                     }
-
-                    // Close the DialogTag when the process is complete
+    
+                    // 프로세스가 완료되면 DialogTag를 닫습니다.
                     setOpenCreate(false);
                 }
             }
         } else {
-            // Close the DialogTag when "취소" button is clicked
+            // "취소" 버튼이 클릭된 경우 DialogTag를 닫습니다.
             setOpenCreate(false);
         }
     };
-
+    
       
     const generateQrCodeAndHandleModal = async (code) => {
         try {
