@@ -1,6 +1,4 @@
-// DashboardLayout.js
-import { useEffect } from 'react';
-import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import { Button, Stack } from '@mui/material';
 import useAuth from '../../auth/useAuth';

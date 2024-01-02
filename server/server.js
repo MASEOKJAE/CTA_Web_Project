@@ -79,46 +79,47 @@ watcher
   .on('error', error => console.log(`Watcher error: ${error}`));
 
 
-app.post('/runQRpy', async (req, res) => {
-  const { code, name, installationDate, location } = req.body;
-
-  // Execute the python script to generate QR code
-  const command = `python3 /home/ubuntu/WorkSpace/CTA_Web_Project/python_files/qr.py ${code}`;
-  exec(command, async (error, stdout, stderr) => {
-    if (error) {
-      console.log(`Error: ${error.message}`);
-      res.status(500).send(error.message);
-    } else if (stderr) {
-      console.log(`Stderr: ${stderr}`);
-      res.status(500).send(stderr);
-    } else {
-      try {
-        // Read the QR code image file
-        const imageFileName = `${code}.png`;
-        const imagePath = `/home/ubuntu/WorkSpace/CTA_Web_Project/public/assets/QRcodes/${imageFileName}`;
-
-        const imageBuffer = await fs.promises.readFile(imagePath);
-
-        // Save the image to the database
-        const sql = 'UPDATE equipment SET qr_code = ? WHERE code = ?';
-        const values = [imageBuffer, code];
-
-        db.query(sql, values, (dbErr, result) => {
-          if (dbErr) {
-            console.error('Error updating database:', dbErr);
-            res.status(500).send(dbErr.toString());
-          } else {
-            console.log('Database updated successfully');
-            res.send(stdout.trim());
-          }
-        });
-      } catch (imageError) {
-        console.error('Error reading QR code image:', imageError);
-        res.status(500).send(imageError.toString());
+  app.post('/runQRpy', async (req, res) => {
+    const { code, name, installationDate, location } = req.body;
+  
+    // Execute the python script to generate QR code
+    const command = `python3 /home/ubuntu/WorkSpace/CTA_Web_Project/python_files/qr.py ${code}`;
+    exec(command, async (error, stdout, stderr) => {
+      if (error) {
+        console.log(`Error: ${error.message}`);
+        res.status(500).send(error.message);
+      } else if (stderr) {
+        console.log(`Stderr: ${stderr}`);
+        res.status(500).send(stderr);
+      } else {
+        try {
+          // Read the QR code image file
+          const imageFileName = `${code}.png`;
+          const imagePath = `/home/ubuntu/WorkSpace/CTA_Web_Project/public/assets/QRcodes/${imageFileName}`;
+  
+          const imageBuffer = await fs.promises.readFile(imagePath);
+  
+          // Save the image to the database
+          const sql = 'INSERT INTO equipment (code, name, installationDate, location, qr_code) VALUES (?, ?, ?, ?, ?)';
+          const values = [code, name, installationDate, location, imageBuffer];
+  
+          db.query(sql, values, (dbErr, result) => {
+            if (dbErr) {
+              console.error('Error inserting into database:', dbErr);
+              res.status(500).send(dbErr.toString());
+            } else {
+              console.log('Database updated successfully');
+              res.send(stdout.trim());
+            }
+          });
+        } catch (imageError) {
+          console.error('Error reading QR code image:', imageError);
+          res.status(500).send(imageError.toString());
+        }
       }
-    }
+    });
   });
-});
+  
 
 
 // app.post('/runQRpy', async (req, res) => {
@@ -254,67 +255,67 @@ app.get('/api/equipment', (req, res) => {
 });
 
 // 라우트 설정 (설비 추가)
-app.post('/api/equipment', (req, res) => {
-  const { code, name, installationDate, location } = req.body;
+// app.post('/api/equipment', (req, res) => {
+//   const { code, name, installationDate, location } = req.body;
 
-  // Check if a record with the provided code exists
-  const checkExistingSql = 'SELECT * FROM equipment WHERE code = ?';
-  db.query(checkExistingSql, [code], (checkErr, checkResult) => {
-    if (checkErr) {
-      console.error('Error checking existing record:', checkErr);
-      res.status(500).send('Internal Server Error');
-      return;
-    }
+//   // Check if a record with the provided code exists
+//   const checkExistingSql = 'SELECT * FROM equipment WHERE code = ?';
+//   db.query(checkExistingSql, [code], (checkErr, checkResult) => {
+//     if (checkErr) {
+//       console.error('Error checking existing record:', checkErr);
+//       res.status(500).send('Internal Server Error');
+//       return;
+//     }
 
-    if (checkResult.length > 0) {
-      // Update the existing record
-      const updateSql = `
-        UPDATE equipment
-        SET name = ?, installationDate = ?, location = ?
-        WHERE code = ?
-      `;
-      db.query(updateSql, [name, installationDate, location, code], (updateErr, updateResult) => {
-        if (!updateErr) {
-          res.send({ message: 'Equipment updated successfully', result: updateResult });
-        } else {
-          console.error('Error updating equipment:', updateErr);
-          res.status(500).send('Internal Server Error');
-        }
-      });
-    } else {
-      // Insert a new record
-      const insertSql = 'INSERT INTO equipment (code, name, installationDate, location) VALUES (?, ?, ?, ?)';
-      db.query(insertSql, [code, name, installationDate, location], (insertErr, insertResult) => {
-        if (!insertErr) {
-          res.send({ message: 'Equipment added successfully', result: insertResult });
-        } else {
-          console.error('Error adding equipment:', insertErr);
-          res.status(500).send('Internal Server Error');
-        }
-      });
-    }
-  });
-});
+//     if (checkResult.length > 0) {
+//       // Update the existing record
+//       const updateSql = `
+//         UPDATE equipment
+//         SET name = ?, installationDate = ?, location = ?
+//         WHERE code = ?
+//       `;
+//       db.query(updateSql, [name, installationDate, location, code], (updateErr, updateResult) => {
+//         if (!updateErr) {
+//           res.send({ message: 'Equipment updated successfully', result: updateResult });
+//         } else {
+//           console.error('Error updating equipment:', updateErr);
+//           res.status(500).send('Internal Server Error');
+//         }
+//       });
+//     } else {
+//       // Insert a new record
+//       const insertSql = 'INSERT INTO equipment (code, name, installationDate, location) VALUES (?, ?, ?, ?)';
+//       db.query(insertSql, [code, name, installationDate, location], (insertErr, insertResult) => {
+//         if (!insertErr) {
+//           res.send({ message: 'Equipment added successfully', result: insertResult });
+//         } else {
+//           console.error('Error adding equipment:', insertErr);
+//           res.status(500).send('Internal Server Error');
+//         }
+//       });
+//     }
+//   });
+// });
 
 // 큐알코드 이후 바로 진행되는 설비 내용들 추가와 관련된 update
-app.post('/api/equipment/:id', (req, res) => {
-  const equipmentId = parseFloat(req.params.id);
-  const name = req.body.name;
-  const installationDate = req.body.installationDate;
-  const location = req.body.location;
+// app.post('/api/equipment/:id', (req, res) => {
+//   const equipmentId = parseFloat(req.params.id);
+//   const name = req.body.name;
+//   const installationDate = req.body.installationDate;
+//   const location = req.body.location;
 
-  db.query("UPDATE equipment SET id = ?, name = ?, installationDate = ?, location = ? WHERE id = ?",
-    [equipmentId, name, installationDate, location], function (err, rows, fields) {
-      if (!err) {
-        console.log("DB 수정 성공!!!");
-        res.sendStatus(200);
-      } else {
-        console.log("DB 수정 실패…")
-        console.log(err);
-        res.sendStatus(500);
-      }
-    });
-});
+//   db.query("UPDATE equipment SET id = ?, name = ?, installationDate = ?, location = ? WHERE id = ?",
+//     [equipmentId, name, installationDate, location], function (err, rows, fields) {
+//       if (!err) {
+//         console.log("DB 수정 성공!!!");
+//         res.sendStatus(200);
+//       } else {
+//         console.log("DB 수정 실패…")
+//         console.log(err);
+//         res.sendStatus(500);
+//       }
+//     });
+// });
 
 // state 테이블
 app.get('/api/state', (req, res) => {

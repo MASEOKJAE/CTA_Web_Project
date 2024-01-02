@@ -11,22 +11,23 @@ import ProductsPage from './pages/ProductsPage';
 import CTAHome from './pages/CTAHome';
 import FixHistory from './pages/RepairHistory';
 import StateHistory from './pages/StateHistory';
+import LoadingPage from './pages/LoadingPage'; // 로딩 페이지 컴포넌트 import
 import useAuth from './auth/useAuth';
 
 // ----------------------------------------------------------------------
 
 export default function Router() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth(); // useAuth 훅에서 loading 상태 가져오기
 
   const routes = useRoutes([
     {
       path: '/',
-      element: <Navigate to="/login" replace />,
+      element: user ? <Navigate to="/dashboard/home" replace /> : <Navigate to="/login" replace />,
       index: true,
     },
     {
       path: '/dashboard',
-      element: <DashboardLayout />,
+      element: user ? <DashboardLayout /> : <Navigate to="/login" replace />,
       children: [
         // { element: <Navigate to="/dashboard/home" />, index: true },
         { path: 'home', element: <CTAHome />, index: true },
@@ -51,6 +52,10 @@ export default function Router() {
       ],
     },
   ]);
+
+  if (loading) {
+    return <LoadingPage />; // 로딩 중이면 로딩 페이지를 보여줍니다.
+  }
 
   return routes;
 }

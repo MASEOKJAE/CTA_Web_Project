@@ -6,14 +6,14 @@ import Router from './routes';
 import useAuth from './auth/useAuth'; // useAuth 훅 import
 
 export default function App() {
-  const { user, logout } = useAuth(); // useAuth 훅 사용
+  const { user, loading, logout } = useAuth(); // useAuth 훅 사용
 
   return (
     <BrowserRouter>
       <HelmetProvider>
         <ThemeProvider>
           <ScrollToTop />
-          <Router user={user} logout={logout} /> {/* Router에 user와 logout 전달 */}
+          <Router user={user} logout={logout} loading={loading} /> {/* Router에 user와 logout 전달 */}
         </ThemeProvider>
       </HelmetProvider>
     </BrowserRouter>

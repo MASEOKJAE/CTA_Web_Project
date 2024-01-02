@@ -38,9 +38,10 @@ def generate_qr_code(data, output_path, database_connection):
             "INSERT INTO equipment (code, name, installationDate, location, qr_code) "
             "VALUES (%s, %s, %s, %s, %s)"
         )
-        insert_data = (data, "", "", "", qr_code_binary)  # Adjust the other fields accordingly
+        # insert_data = (data, "", "", "", qr_code_binary)  # Adjust the other fields accordingly
         cursor = database_connection.cursor()
-        cursor.execute(insert_query, insert_data)
+        # cursor.execute(insert_query, insert_data)
+        cursor.execute(insert_query)
         database_connection.commit()
 
         print(f"New QR Code and data saved in the database for code: {data}")

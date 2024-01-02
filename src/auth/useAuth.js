@@ -3,6 +3,7 @@ import axios from 'axios';
 
 export default function useAuth() {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const refreshIntervalId = useRef(null);
   const JWT_EXPIRY_TIME = 3600000; // 토큰의 만료 시간을 설정. 이 예시에서는 1시간(3600000밀리초)로 설정
 
@@ -64,6 +65,7 @@ export default function useAuth() {
    const loadUser = async () => {
     const accessToken = localStorage.getItem('accessToken');
     if (!accessToken) {
+      setLoading(false);
       return;
     }
 
@@ -71,6 +73,7 @@ export default function useAuth() {
     try {
       const response = await axios.get('/api/user');
       setUser(response.data.user);
+      setLoading(false);
       console.log('성공적으로 토큰 업데이트를 완료했습니다 (새로 고침)');
     } catch (error) {
       console.error(error);
@@ -82,5 +85,5 @@ export default function useAuth() {
     loadUser();
   }, []);
 
-  return { user, login, logout };
+  return { user, loading, login, logout };
 }

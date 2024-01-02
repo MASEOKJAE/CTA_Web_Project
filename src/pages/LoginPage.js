@@ -92,14 +92,14 @@ export default function LoginPage() {
 
             <Stack spacing={2} sx={{ mt: 3 }}>
               <TextField
-                label="Id"
+                label="사용자 이름"
                 fullWidth
                 variant="outlined"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
               />
               <TextField
-                label="Password"
+                label="비밀번호"
                 fullWidth
                 type="password"
                 variant="outlined"
@@ -114,7 +114,7 @@ export default function LoginPage() {
                 onClick={handleLogin}
                 disabled={loading} // 로딩 중에는 버튼 비활성화
               >
-                {loading ? <CircularProgress size={24} /> : 'Sign In'}
+                {loading ? <CircularProgress size={24} /> : '로그인'}
               </Button>
             </Stack>
           </StyledContent>

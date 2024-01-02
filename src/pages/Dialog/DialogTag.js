@@ -39,40 +39,64 @@ function DialogTag(props) {
   const row = {
     id, code, name, installationDate, location
   }
+  // const generateQRCode = async () => {
+  //   try {
+  //     // Make an Axios POST request to trigger QR code generation
+  //     const response = await axios.post('/runQRpy', {
+  //       code,
+  //       name,
+  //       installationDate,
+  //       location,
+  //     });
+
+  //     // Handle the response if needed
+  //     console.log(response.data);
+
+  //     // Open the modal or take further actions as needed
+  //   } catch (error) {
+  //     console.error('Error generating QR code:', error);
+  //     // Handle the error (e.g., show an error message to the user)
+  //   }
+  // };
+  
   const generateQRCode = async () => {
     try {
-      // Make an Axios POST request to trigger QR code generation
+      // Make an Axios POST request to trigger QR code generation and data insertion
       const response = await axios.post('/runQRpy', {
         code,
         name,
         installationDate,
         location,
       });
-
+  
       // Handle the response if needed
       console.log(response.data);
-
+  
       // Open the modal or take further actions as needed
     } catch (error) {
-      console.error('Error generating QR code:', error);
+      console.error('Error generating QR code and inserting data:', error);
       // Handle the error (e.g., show an error message to the user)
     }
   };
-  
-  
-  
-  const fetchAndDisplayQRCode = async (code) => {
-    try {
-      // Fetch QR code image from the server
-      const qrCodeImageURL = `/QRcodes/${code}.png`;
+  const handleGenerateAndAdd = async () => {
+    // 먼저 QR 코드를 생성
+    generateQRCode();
 
-      // Display QR code image in the modal
-      setQrCodeImage(qrCodeImageURL);
-      setQrCodeModalOpen(true);
-    } catch (error) {
-      console.error('Error fetching QR code image:', error);
-    }
-  };
+    // 그 후에 추가 작업 실행
+    await props.handleClose(row);
+};
+  // const fetchAndDisplayQRCode = async (code) => {
+  //   try {
+  //     // Fetch QR code image from the server
+  //     const qrCodeImageURL = `/QRcodes/${code}.png`;
+
+  //     // Display QR code image in the modal
+  //     setQrCodeImage(qrCodeImageURL);
+  //     setQrCodeModalOpen(true);
+  //   } catch (error) {
+  //     console.error('Error fetching QR code image:', error);
+  //   }
+  // };
     return (
       <Dialog open={props.open} onClose={props.onClose}>
               <DialogTitle>{props.title}</DialogTitle>
@@ -107,9 +131,10 @@ function DialogTag(props) {
                   fullWidth
                   variant="standard"
                   type="date"
-                  value={format(new Date(installationDate), 'yyyy-MM-dd')} // Convert to Date object
+                  value={format(new Date(installationDate), 'yyyy-MM-dd')}
                   onChange={(ev) => setInstallationDate(ev.target.value)}
                 />
+
                 
                 <TextField 
                   margin="dense"
@@ -122,12 +147,13 @@ function DialogTag(props) {
                   onChange={(ev) => setLocation(ev.target.value)}
                 />
                 <DialogActions>
-                <Button onClick={() => generateQRCode()}>QR 코드 생성</Button>
+                {/* <Button onClick={() => generateQRCode()}>QR 코드 생성</Button> */}
                 </DialogActions>
               </DialogContent>
               <DialogActions>
                 <Button onClick={() => props.handleClose()}>취소</Button>
-                <Button onClick={() => props.handleClose(row)}>{props.confirm}</Button>
+                {/* <Button onClick={() => props.handleClose(row)}>{props.confirm}</Button> */}
+                <Button onClick={() => handleGenerateAndAdd()}>추가하기</Button>
               </DialogActions>
             </Dialog>
     );

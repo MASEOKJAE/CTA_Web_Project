@@ -26,6 +26,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './CTAHome.css';
 import useAuth from '../auth/useAuth';
+import RepairDialogTag from './Dialog/RepairDialogTag';
 
 const TABLE_HEAD = [
     { id: 'stateLight', label: '', alignRight: false },
@@ -144,34 +145,6 @@ export default function CTAHomePage() {
         setOpenCreate(true);
     }
 
-    const generateAndSaveQRCode = async (code) => {
-        try {
-            // Fetch the QR code image from the server
-            const response = await fetch(`/api/generateQRCode/${code}`);
-
-            if (response.ok) {
-                // If the response is successful, set the QR code image and open the modal
-                const imageBlob = await response.blob();
-                const qrCodeImageURL = URL.createObjectURL(imageBlob);
-
-                setQrCodeImage(qrCodeImageURL);
-                setQrCodeModalOpen(true);
-
-                // Save the QR code image URL to the database (you may need to adjust this logic based on your backend)
-                await axios.put(`/api/equipment/${code}`, {
-                    qr_code: qrCodeImageURL,
-                });
-            } else {
-                // If there is an error in fetching the image, log an error
-                console.error('Error generating or fetching QR code image:', response.statusText);
-            }
-        } catch (error) {
-            // If there is a general error, log an error
-            console.error('Error generating or fetching QR code image:', error);
-        }
-    };
-
-    
     const handleQrCodeConfirmation = async (code, equipmentData) => {
         try {
             // Fetch the QR code image from the server
@@ -200,51 +173,7 @@ export default function CTAHomePage() {
         }
     };
 
-    // const handleCloseCreate = async (row) => {
-    //     let code;
-
-    //     if (row && row.installationDate) {
-    //         row.installationDate = new Date(row.installationDate).toISOString().split('T')[0];
-
-    //         // Check if the code already exists in the table
-    //         const codeExistsInTable = equipmentData.some(equipment => equipment.code === row.code);
-
-    //         if (codeExistsInTable) {
-    //             // If the code already exists in the table, show a notification and do not proceed with adding
-    //             toast.error(`Equipment with code ${row.code} already exists in the table.`);
-    //         } else {
-    //             try {
-    //                 // Add the equipment to the table (assuming the table is updated locally)
-    //                 setEquipmentData([...equipmentData, row]);
-
-    //                 // Add the equipment to the database
-    //                 const response = await axios.post('/api/equipment', row, {
-    //                     headers: {
-    //                         'Content-Type': 'application/json',
-    //                     },
-    //                 });
-
-    //                 const data = response.data;
-
-    //                 console.log('Equipment added successfully:', data.message);
-
-    //                 code = data.result.code;
-    //             } catch (error) {
-    //                 console.error('Error adding equipment:', error);
-    //             } finally {
-    //                 if (code) {
-    //                     handleQrCodeConfirmation(code);
-    //                 }
-
-    //                 // Close the DialogTag when the process is complete
-    //                 setOpenCreate(false);
-    //             }
-    //         }
-    //     } else {
-    //         // Close the DialogTag when "취소" button is clicked
-    //         setOpenCreate(false);
-    //     }
-    // };
+    
     const handleCloseCreate = async (row) => {
         let code;
     
@@ -296,71 +225,9 @@ export default function CTAHomePage() {
             setOpenCreate(false);
         }
     };
-    
-      
-    const generateQrCodeAndHandleModal = async (code) => {
-        try {
-            const response = await axios.post('/runQRpy', {
-                code,
-            });
-    
-            console.log(response.data);
-    
-        } catch (error) {
-            console.error('Error generating QR code:', error);
-        }
-    };
-    
-    const generateQRCodeAndSave = async (row, code) => {
-        try {
-            // Make an Axios POST request to trigger QR code generation
-            const qrCodeResponse = await axios.post('/runQRpy', {
-                code: row.code,
-                name: row.name,
-                installationDate: row.installationDate,
-                location: row.location,
-            });
-    
-            // Handle the response if needed
-            console.log(qrCodeResponse.data);
-    
-            if (qrCodeResponse.data.success) {
-                // Fetch the QR code image from the server
-                const qrImageResponse = await fetch(`/api/getQRCodeImage/${code}`);
-    
-                if (qrImageResponse.ok) {
-                    // If the response is successful, set the QR code image and open the modal
-                    const imageBlob = await qrImageResponse.blob();
-                    const qrCodeImageURL = URL.createObjectURL(imageBlob);
-    
-                    // Save the QR code image to the database
-                    await axios.put(`/api/equipment/${code}`, {
-                        qr_code: qrCodeImageURL,
-                        // ... other fields from equipmentData that you want to save
-                    });
-    
-                    // Open the modal or take further actions as needed
-                    setQrCodeImage(qrCodeImageURL);
-                    setQrCodeModalOpen(true);
-                } else {
-                    console.error('Error fetching QR code image:', qrImageResponse.statusText);
-                }
-            } else {
-                console.error('QR code generation failed:', qrCodeResponse.data.error);
-                // Log the specific error details
-                console.error('QR code generation error details:', qrCodeResponse.data.details || 'No error details available');
-                // Handle the error (e.g., show an error message to the user)
-            }
-        } catch (error) {
-            console.error('Error triggering QR code generation:', error);
-            // Log the error details if available
-            console.error('Error details:', error.response ? error.response.data : 'No error details available');
-            // Handle the error (e.g., show an error message to the user)
-        }
-    };    
+ 
     
     
-
     const handleItemDelete = (id) => {
         axios.delete(`/api/equipment/${id}`)
             .then(() => {
@@ -371,7 +238,26 @@ export default function CTAHomePage() {
                 console.log(error);
             });
     }
-
+    // const handleCloseEdit = (row) => {
+    //     if (row) {
+    //         row.installationDate = new Date(row.installationDate).toISOString().split('T')[0];
+    //         const newEquipmentData = [...equipmentData];
+    //         const index = newEquipmentData.findIndex((equipment) => equipment.id === row.id);
+    //         newEquipmentData[index] = row;
+    
+    //         setEquipmentData(newEquipmentData);
+    
+    //         axios.put(`/api/equipment/${row.id}`, row)
+    //             .then(response => {
+    //                 console.log('Response:', response.data);
+    //             })
+    //             .catch(error => {
+    //                 console.error('Error:', error);
+    //             });
+    //     }
+    
+    //     setEditRow(null); // Clear editRow when closing the edit dialog
+    // };
     const handleCloseEdit = (row) => {
         if (row) {
             row.installationDate = new Date(row.installationDate).toISOString().split('T')[0];
@@ -506,9 +392,6 @@ export default function CTAHomePage() {
                     <Typography variant="h4" gutterBottom>
                         안녕하세요, {user ? user.username : 'Guest'} 님
                     </Typography>
-                    {/* <Button className="addEquipmentButton" variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={handleClickOpenCreate}>
-                        설비 추가
-                    </Button> */}
                     <p className={`addEquipmentButton ${isScrolled ? 'h_event2' : ''}`} onClick={handleClickOpenCreate}>
                         설비 추가
                     </p>
@@ -531,7 +414,6 @@ export default function CTAHomePage() {
 
                             <TableBody>
                                 {getCurrentPageData().map((equipment, index) => (
-                                    // {equipmentData.map((equipment, index) => (
                                     <TableRow key={index}>
                                         <TableCell><StatusIndicator status={repairStatus[equipment.code]} /></TableCell>
                                         <TableCell>{equipment.code}</TableCell>
@@ -545,15 +427,15 @@ export default function CTAHomePage() {
                                                 확인
                                             </Button>
                                         </TableCell>
-                                        <TableCell align="left"><Button variant="text" onClick={() => handleStateConfirmation(equipment)}>
+                                        <TableCell align="center"><Button variant="text" onClick={() => handleStateConfirmation(equipment)}>
                                             확인
                                         </Button>
                                         </TableCell>
-                                        <TableCell align="left"><Button variant="text" onClick={() => handleQrCodeConfirmation(equipment.code)}>
+                                        <TableCell align="center"><Button variant="text" onClick={() => handleQrCodeConfirmation(equipment.code)}>
                                             확인
                                         </Button>
                                         </TableCell>
-                                        <TableCell align="left">
+                                        <TableCell align="center">
                                             <IconButton variant="text" onClick={() => handleOpenEditDialog(equipment)}>
                                                 <Iconify icon={'material-symbols:edit'} />
                                             </IconButton>
