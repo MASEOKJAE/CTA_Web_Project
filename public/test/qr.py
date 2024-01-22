@@ -30,7 +30,7 @@ def read_qr_code(image_path):
             cv2.line(image, tuple(points[j]), tuple(points[(j+1) % num_of_points]), (0, 255, 0), 2)
 
     # 이미지에 윤곽선이 그려진 결과 저장
-    cv2.imwrite("output_image.png", image)
+    # cv2.imwrite("output_image.png", image)
 
     return qr_code_data
 

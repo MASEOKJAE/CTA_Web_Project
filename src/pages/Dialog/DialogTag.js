@@ -39,25 +39,6 @@ function DialogTag(props) {
   const row = {
     id, code, name, installationDate, location
   }
-  // const generateQRCode = async () => {
-  //   try {
-  //     // Make an Axios POST request to trigger QR code generation
-  //     const response = await axios.post('/runQRpy', {
-  //       code,
-  //       name,
-  //       installationDate,
-  //       location,
-  //     });
-
-  //     // Handle the response if needed
-  //     console.log(response.data);
-
-  //     // Open the modal or take further actions as needed
-  //   } catch (error) {
-  //     console.error('Error generating QR code:', error);
-  //     // Handle the error (e.g., show an error message to the user)
-  //   }
-  // };
   
   const generateQRCode = async () => {
     try {
@@ -85,18 +66,6 @@ function DialogTag(props) {
     // 그 후에 추가 작업 실행
     await props.handleClose(row);
 };
-  // const fetchAndDisplayQRCode = async (code) => {
-  //   try {
-  //     // Fetch QR code image from the server
-  //     const qrCodeImageURL = `/QRcodes/${code}.png`;
-
-  //     // Display QR code image in the modal
-  //     setQrCodeImage(qrCodeImageURL);
-  //     setQrCodeModalOpen(true);
-  //   } catch (error) {
-  //     console.error('Error fetching QR code image:', error);
-  //   }
-  // };
     return (
       <Dialog open={props.open} onClose={props.onClose}>
               <DialogTitle>{props.title}</DialogTitle>
@@ -152,8 +121,7 @@ function DialogTag(props) {
               </DialogContent>
               <DialogActions>
                 <Button onClick={() => props.handleClose()}>취소</Button>
-                {/* <Button onClick={() => props.handleClose(row)}>{props.confirm}</Button> */}
-                <Button onClick={() => handleGenerateAndAdd()}>추가하기</Button>
+                <Button onClick={() => handleGenerateAndAdd()}>확인</Button>
               </DialogActions>
             </Dialog>
     );

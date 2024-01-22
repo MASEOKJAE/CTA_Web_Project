@@ -31,53 +31,61 @@ watcher
   .on('add', path => {
     console.log(`File ${path} has been added`);
 
-    const command1 = `python3 /home/ubuntu/WorkSpace/CTA_Web_Project/public/test/colorDetect.py ${path}`;
-    exec(command1, (error, stdout, stderr) => {
-      if (error) {
-        console.log(`Error: ${error.message}`);
-        return;
-      }
-      if (stderr) {
-        console.log(`Stderr: ${stderr}`);
-        return;
-      }
-      console.log(`Stdout: ${stdout}`);
-      colorDetectResult = stdout.trim(); // Python 스크립트의 결과를 저장하고 줄바꿈 문자를 제거
-
-      // command1이 완료된 후 command2 실행
-      const command2 = `python3 /home/ubuntu/WorkSpace/CTA_Web_Project/public/test/qr.py ${path}`;
-      exec(command2, (error, stdout, stderr) => {
+    setTimeout(() => {
+      const command1 = `python3 /home/ubuntu/WorkSpace/CTA_Web_Project/public/test/tempDetect.py ${path}`;
+      exec(command1, (error, stdout, stderr) => {
         if (error) {
           console.log(`Error: ${error.message}`);
           return;
         }
         if (stderr) {
+          console.log('지금 컬러 디텍팅 처리에서 문제 발생')
           console.log(`Stderr: ${stderr}`);
           return;
         }
         console.log(`Stdout: ${stdout}`);
-        mcName = stdout.trim(); // Python 스크립트의 결과를 저장하고 줄바꿈 문자를 제거
+        var tempDetectResult = stdout.trim(); // Python 스크립트의 결과를 저장하고 줄바꿈 문자를 제거
 
-        // colorDetect.py 실행 후 state 테이블에 데이터 추가
-        const status = colorDetectResult === '1' ? '점검 필요' : '정상';
-        const photoName = path.split('/').pop(); // 경로에서 파일 이름만 추출
-        const sql = 'INSERT INTO state (name, photoName, status, photoPath) VALUES (?, ?, ?, ?)';
+        if(tempDetectResult > 60)
+          colorDetectResult = 1;
+        else
+          colorDetectResult = 0;
 
-        db.query(sql, [mcName, photoName, status, path], (err, result) => {
-          if (err) {
-            console.error('Error adding state:', err);
-          } else {
-            console.log('State added successfully', result);
-
-            // DB 업로드 후 변수 초기화
-            mcName = '';
+        // command1이 완료된 후 command2 실행
+        const command2 = `python3 /home/ubuntu/WorkSpace/CTA_Web_Project/public/test/qr.py ${path}`;
+        exec(command2, (error, stdout, stderr) => {
+          if (error) {
+            console.log(`Error: ${error.message}`);
+            return;
           }
+          if (stderr) {
+            console.log('지금 qr 처리에서 문제 발생')
+            console.log(`Stderr: ${stderr}`);
+            return;
+          }
+          console.log(`Stdout: ${stdout}`);
+          mcName = stdout.trim(); // Python 스크립트의 결과를 저장하고 줄바꿈 문자를 제거
+
+          // colorDetect.py 실행 후 state 테이블에 데이터 추가
+          const status = colorDetectResult === '1' ? '점검 필요' : '정상';
+          const photoName = path.split('/').pop(); // 경로에서 파일 이름만 추출
+          const sql = 'INSERT INTO state (name, photoName, status, photoPath) VALUES (?, ?, ?, ?)';
+
+          db.query(sql, [mcName, photoName, status, path], (err, result) => {
+            if (err) {
+              console.error('Error adding state:', err);
+            } else {
+              console.log('State added successfully', result);
+
+              // DB 업로드 후 변수 초기화
+              mcName = '';
+            }
+          });
         });
       });
-    });
+    }, 3000); // 3초 후에 실행
   })
   .on('error', error => console.log(`Watcher error: ${error}`));
-
 
   app.post('/runQRpy', async (req, res) => {
     const { code, name, installationDate, location } = req.body;
@@ -119,80 +127,9 @@ watcher
       }
     });
   });
-  
 
 
-// app.post('/runQRpy', async (req, res) => {
-//   const { code, name, installationDate, location } = req.body;
-
-//   // Execute the python script to generate QR code
-//   const command = `python3 /home/ubuntu/WorkSpace/CTA_Web_Project/python_files/qr.py ${code}`;
-//   exec(command, async (error, stdout, stderr) => {
-//     if (error) {
-//       console.log(`Error: ${error.message}`);
-//       res.status(500).send(error.message);
-//     } else if (stderr) {
-//       console.log(`Stderr: ${stderr}`);
-//       res.status(500).send(stderr);
-//     } else {
-//       try {
-//         // Read the QR code image file
-//         const imageFileName = `${code}.png`;
-//         const imagePath = `/home/ubuntu/WorkSpace/CTA_Web_Project/public/assets/QRcodes/${imageFileName}`;
-//         const imageBuffer = await fs.promises.readFile(imagePath);
-
-//         // Save the image URL to the database
-//         const qrCodeImageURL = `/QRcodes/${code}.png`;
-
-//         // Save QR code image URL to the database
-//         const sql = 'UPDATE equipment SET qr_code = ? WHERE code = ?';
-//         const values = [qrCodeImageURL, code];
-
-//         db.query(sql, values, (dbErr, result) => {
-//           if (dbErr) {
-//             console.error('Error updating database with QR code image URL:', dbErr);
-//             res.status(500).send(dbErr.toString());
-//           } else {
-//             console.log('Database updated with QR code image URL successfully', result);
-
-//             // Continue with your existing logic for saving other device information to the database
-
-//             res.send(qrCodeImageURL);
-//           }
-//         });
-//       } catch (imageError) {
-//         console.error('Error reading QR code image:', imageError);
-//         res.status(500).send(imageError.toString());
-//       }
-//     }
-//   });
-// });
-
-// Endpoint for retrieving QR code image
-// app.get('/api/getQRCodeImage/:code', (req, res) => {
-//   const code = req.params.code;
-
-//   const query = 'SELECT qr_code FROM equipment WHERE code = ?';
-
-//   db.query(query, [code], (error, results) => {
-//     if (error) {
-//       console.error('Error retrieving QR code image:', error);
-//       res.status(500).send('Error retrieving QR code image');
-//     } else {
-//       if (results.length > 0 && results[0].qr_code) {
-//         // Send the QR code image data
-//         res.send(results[0].qr_code);
-//       } else {
-//         res.status(404).send('QR code image not found');
-//       }
-//     }
-//   });
-// });
-// Endpoint for retrieving QR code image
-// Add a new endpoint to retrieve QR code image data
-
-// server.js
-app.get('/api/getQRCodeImage/:code', (req, res) => {
+  app.get('/api/getQRCodeImage/:code', (req, res) => {
   const code = req.params.code;
 
   const query = 'SELECT qr_code FROM equipment WHERE code = ?';
@@ -253,69 +190,6 @@ app.get('/api/equipment', (req, res) => {
     }
   });
 });
-
-// 라우트 설정 (설비 추가)
-// app.post('/api/equipment', (req, res) => {
-//   const { code, name, installationDate, location } = req.body;
-
-//   // Check if a record with the provided code exists
-//   const checkExistingSql = 'SELECT * FROM equipment WHERE code = ?';
-//   db.query(checkExistingSql, [code], (checkErr, checkResult) => {
-//     if (checkErr) {
-//       console.error('Error checking existing record:', checkErr);
-//       res.status(500).send('Internal Server Error');
-//       return;
-//     }
-
-//     if (checkResult.length > 0) {
-//       // Update the existing record
-//       const updateSql = `
-//         UPDATE equipment
-//         SET name = ?, installationDate = ?, location = ?
-//         WHERE code = ?
-//       `;
-//       db.query(updateSql, [name, installationDate, location, code], (updateErr, updateResult) => {
-//         if (!updateErr) {
-//           res.send({ message: 'Equipment updated successfully', result: updateResult });
-//         } else {
-//           console.error('Error updating equipment:', updateErr);
-//           res.status(500).send('Internal Server Error');
-//         }
-//       });
-//     } else {
-//       // Insert a new record
-//       const insertSql = 'INSERT INTO equipment (code, name, installationDate, location) VALUES (?, ?, ?, ?)';
-//       db.query(insertSql, [code, name, installationDate, location], (insertErr, insertResult) => {
-//         if (!insertErr) {
-//           res.send({ message: 'Equipment added successfully', result: insertResult });
-//         } else {
-//           console.error('Error adding equipment:', insertErr);
-//           res.status(500).send('Internal Server Error');
-//         }
-//       });
-//     }
-//   });
-// });
-
-// 큐알코드 이후 바로 진행되는 설비 내용들 추가와 관련된 update
-// app.post('/api/equipment/:id', (req, res) => {
-//   const equipmentId = parseFloat(req.params.id);
-//   const name = req.body.name;
-//   const installationDate = req.body.installationDate;
-//   const location = req.body.location;
-
-//   db.query("UPDATE equipment SET id = ?, name = ?, installationDate = ?, location = ? WHERE id = ?",
-//     [equipmentId, name, installationDate, location], function (err, rows, fields) {
-//       if (!err) {
-//         console.log("DB 수정 성공!!!");
-//         res.sendStatus(200);
-//       } else {
-//         console.log("DB 수정 실패…")
-//         console.log(err);
-//         res.sendStatus(500);
-//       }
-//     });
-// });
 
 // state 테이블
 app.get('/api/state', (req, res) => {
@@ -507,9 +381,13 @@ app.get('/api/user', (req, res) => {
   jwt.verify(token, SECRET_KEY, (err, decoded) => {
     if (err) {
       console.error('Invalid token', err);
-      res.status(401).json({ error: 'Invalid token' });
+      if (err.name === 'TokenExpiredError') {
+        res.status(401).json({ error: 'Token expired' });
+      } else {
+        res.status(401).json({ error: 'Invalid token' });
+      }
       return;
-    }
+    }    
 
     const query = `SELECT * FROM userInfo WHERE id = ?`;
     db.query(query, [decoded.id], (err, results) => {
@@ -520,7 +398,7 @@ app.get('/api/user', (req, res) => {
       }
 
       const user = results[0];
-      console.log('User info retrieved successfully:', user);
+      // console.log('User info retrieved successfully:', user);
       res.json({ user });
     });
   });

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 
 export default function useAuth() {
@@ -45,7 +45,7 @@ export default function useAuth() {
     if (refreshIntervalId.current) {
       clearInterval(refreshIntervalId.current); // 기존 인터벌이 있다면 해제
     }
-    refreshIntervalId.current = setInterval(onSilentRefresh, JWT_EXPIRY_TIME - 60000); // 토큰 만료 시간이 1시간이라면, 59분 후에 갱신 시도
+    refreshIntervalId.current = setInterval(onSilentRefresh, JWT_EXPIRY_TIME / 2); // 토큰 만료 시간의 절반 정도에서 갱신을 시도
   };
 
   const onSilentRefresh = async () => {
@@ -61,8 +61,8 @@ export default function useAuth() {
     }
   };
 
-   // 애플리케이션 시작 시에 사용자 정보를 서버에서 불러오는 함수
-   const loadUser = async () => {
+  // 애플리케이션 시작 시에 사용자 정보를 서버에서 불러오는 함수
+  const loadUser = useCallback(async () => {
     const accessToken = localStorage.getItem('accessToken');
     if (!accessToken) {
       setLoading(false);
@@ -77,13 +77,17 @@ export default function useAuth() {
       console.log('성공적으로 토큰 업데이트를 완료했습니다 (새로 고침)');
     } catch (error) {
       console.error(error);
+      if (error.response && error.response.data.error === 'Token expired') {
+        logout(); // 토큰이 만료되었다면 로그아웃
+        window.location.href = '/login'; // 로그인 페이지로 리디렉션
+      }
     }
-  };
+  }, []); // 의존성 배열, loadUser 함수가 의존하는 값들을 여기에 추가
 
   // 애플리케이션이 시작될 때 사용자 정보를 불러옵니다.
   useEffect(() => {
     loadUser();
-  }, []);
+  }, [loadUser]); // loadUser를 의존성 배열에 추가합니다.
 
   return { user, loading, login, logout };
 }
