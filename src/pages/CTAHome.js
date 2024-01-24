@@ -26,7 +26,6 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './CTAHome.css';
 import useAuth from '../auth/useAuth';
-import RepairDialogTag from './Dialog/RepairDialogTag';
 
 const TABLE_HEAD = [
     { id: 'stateLight', label: '', alignRight: false },
@@ -62,15 +61,6 @@ export default function CTAHomePage() {
     const filteredEquipmentData = equipmentData.filter((equipment) =>
         equipment.code.toLowerCase().includes(searchTerm.toLowerCase())
     );
-
-    const handleChangePage = (event, newPage) => {
-        setPage(newPage);
-    };
-
-    const handleChangeRowsPerPage = (event) => {
-        setRowsPerPage(parseInt(event.target.value, 10));
-        setPage(0);
-    };
 
     useEffect(() => {
         const handleScroll = () => {
@@ -173,19 +163,19 @@ export default function CTAHomePage() {
         }
     };
 
-    
+
     const handleCloseCreate = async (row) => {
         let code;
-    
+
         if (row && row.installationDate) {
             row.installationDate = new Date(row.installationDate).toISOString().split('T')[0];
-    
+
             // 디버깅: 행을 테이블에 추가하기 전에 행을 로그로 출력
             console.log('행 데이터:', row);
-    
+
             // 테이블에 코드가 이미 있는지 확인
             const codeExistsInTable = equipmentData.some(equipment => equipment.code === row.code);
-    
+
             if (codeExistsInTable) {
                 // 테이블에 이미 코드가 있다면 알림을 표시하고 추가 작업을 진행하지 않습니다.
                 toast.error(`코드 ${row.code}를 가진 장비는 이미 테이블에 존재합니다.`);
@@ -193,21 +183,21 @@ export default function CTAHomePage() {
                 try {
                     // 테이블에 장비 추가 (테이블이 로컬로 업데이트된 것으로 가정)
                     setEquipmentData(prevData => [...prevData, row]);
-    
+
                     // 디버깅: 업데이트된 equipmentData를 로그로 출력
                     console.log('업데이트된 equipmentData:', equipmentData);
-    
+
                     // 장비를 데이터베이스에 추가
                     const response = await axios.post('/api/equipment', row, {
                         headers: {
                             'Content-Type': 'application/json',
                         },
                     });
-    
+
                     const data = response.data;
-    
+
                     console.log('장비가 성공적으로 추가되었습니다:', data.message);
-    
+
                     code = data.result.code;
                 } catch (error) {
                     console.error('장비 추가 중 오류 발생:', error);
@@ -215,7 +205,7 @@ export default function CTAHomePage() {
                     if (code) {
                         handleQrCodeConfirmation(code);
                     }
-    
+
                     // 프로세스가 완료되면 DialogTag를 닫습니다.
                     setOpenCreate(false);
                 }
@@ -225,9 +215,9 @@ export default function CTAHomePage() {
             setOpenCreate(false);
         }
     };
- 
-    
-    
+
+
+
     const handleItemDelete = (id) => {
         axios.delete(`/api/equipment/${id}`)
             .then(() => {
@@ -238,26 +228,7 @@ export default function CTAHomePage() {
                 console.log(error);
             });
     }
-    // const handleCloseEdit = (row) => {
-    //     if (row) {
-    //         row.installationDate = new Date(row.installationDate).toISOString().split('T')[0];
-    //         const newEquipmentData = [...equipmentData];
-    //         const index = newEquipmentData.findIndex((equipment) => equipment.id === row.id);
-    //         newEquipmentData[index] = row;
-    
-    //         setEquipmentData(newEquipmentData);
-    
-    //         axios.put(`/api/equipment/${row.id}`, row)
-    //             .then(response => {
-    //                 console.log('Response:', response.data);
-    //             })
-    //             .catch(error => {
-    //                 console.error('Error:', error);
-    //             });
-    //     }
-    
-    //     setEditRow(null); // Clear editRow when closing the edit dialog
-    // };
+
     const handleCloseEdit = (row) => {
         if (row) {
             row.installationDate = new Date(row.installationDate).toISOString().split('T')[0];
@@ -324,8 +295,6 @@ export default function CTAHomePage() {
         );
     };
 
-
-
     // 해당 설비 state 상세 정보 확인
     const handleStateConfirmation = async (equipment) => {
         try {
@@ -380,6 +349,21 @@ export default function CTAHomePage() {
 
     const totalPages = Math.ceil(filteredEquipmentData.length / rowsPerPage);
 
+    const sortedData = getCurrentPageData().sort((a, b) => {
+        const statusA = repairStatus[a.code];
+        const statusB = repairStatus[b.code];
+      
+        if (statusA === '점검 필요' && statusB !== '점검 필요') {
+          return -1;
+        } else if (statusA !== '점검 필요' && statusB === '점검 필요') {
+          return 1;
+        } else if (statusA === '현장 확인 필요' && statusB !== '현장 확인 필요') {
+          return -1;
+        } else if (statusA !== '현장 확인 필요' && statusB === '현장 확인 필요') {
+          return 1;
+        }
+        return 0;
+      });
 
     return (
         <>
@@ -413,7 +397,7 @@ export default function CTAHomePage() {
                             />
 
                             <TableBody>
-                                {getCurrentPageData().map((equipment, index) => (
+                                {sortedData.map((equipment, index) => (
                                     <TableRow key={index}>
                                         <TableCell><StatusIndicator status={repairStatus[equipment.code]} /></TableCell>
                                         <TableCell>{equipment.code}</TableCell>
