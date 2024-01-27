@@ -3,6 +3,8 @@ import { Helmet } from 'react-helmet-async';
 import { useLocation } from 'react-router-dom';
 import { Container, Typography, Table, TableContainer, TableHead, TableBody, TableRow, TableCell, Paper, Box, Button, Modal } from '@mui/material';
 import { styled, Stack } from '@mui/system';
+import { Grid } from '@mui/material';
+import StateDialogTag from './Dialog/StateDialogTag';
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   fontWeight: 'bold',
@@ -11,6 +13,7 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
 }));
 
 const StateHistoryPage = () => {
+  const [openCreate, setOpenCreate] = useState(false);
   const location = useLocation();
   const { state } = location;
 
@@ -45,6 +48,28 @@ const StateHistoryPage = () => {
 
   const totalPages = Math.ceil(filteredStateData.length / rowsPerPage);
 
+  const handleCloseCreate = async (row) => {
+    setOpenCreate(false);
+  }
+
+  const handleCapture = ({ target }) => {
+    // FormData를 사용하여 파일 데이터를 서버로 전송
+    const formData = new FormData();
+    formData.append('image', target.files[0]);
+  
+    fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    })
+    .then(response => response.json())
+    .then(data => {
+      console.log(data);
+    })
+    .catch(error => {
+      console.error(error);
+    });
+  };
+  
   return (
     <>
       <Helmet>
@@ -62,15 +87,31 @@ const StateHistoryPage = () => {
           <Typography variant="body1" gutterBottom>위치: {equipment.location}</Typography>
         </Paper>
 
-        <Typography variant="h5" gutterBottom component="div">
-          State Information
-        </Typography>
+        <Stack>
+          <Grid container justifyContent="space-between" alignItems="center">
+            <Grid item>
+              <Typography variant="h5" gutterBottom component="div">
+                State Information
+              </Typography>
+            </Grid>
+            <Grid item>
+              <Button variant="contained" component="label">
+                직접추가
+                <input type="file" accept="image/*" capture="camera" onChange={handleCapture} style={{ display: 'none' }} />
+              </Button>
+
+              {/* <StateDialogTag open={openCreate} handleClose={handleCloseCreate} /> */}
+
+            </Grid>
+          </Grid>
+        </Stack>
+
         <TableContainer component={Paper} sx={{ mb: 4 }}>
           <Table>
             <TableHead>
               <TableRow>
                 <StyledTableCell>설비 ID</StyledTableCell>
-                <StyledTableCell>설비명</StyledTableCell>
+                <StyledTableCell>설비 코드</StyledTableCell>
                 <StyledTableCell>점검 시간</StyledTableCell>
                 <StyledTableCell>설비 상태</StyledTableCell>
                 <StyledTableCell>설비 사진</StyledTableCell>

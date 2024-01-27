@@ -52,14 +52,6 @@ function RepairDialogTag(props) {
         <DialogContentText>
           수리 항목을 추가하기 위해 아래 폼을 작성해주세요
         </DialogContentText>
-        {/* <TextField
-          margin="dense"
-          label="설비 코드"
-          fullWidth
-          variant="standard"
-          value={code}
-          onChange={(ev) => setCode(ev.target.value)}
-        /> */}
         <TextField
           margin="dense"
           label="관리자 명"
@@ -98,7 +90,9 @@ function RepairDialogTag(props) {
           {
             photo ?
               <p>선택된 파일: {photo.name}</p> :
-              <p>클릭하거나 파일을 이곳으로 끌어다 놓으세요.</p>
+              <div>
+                <p>클릭하거나 파일을 이곳으로 끌어다 놓으세요.</p>
+              </div>
           }
         </div>
       </DialogContent>

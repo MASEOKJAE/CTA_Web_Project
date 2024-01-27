@@ -12,6 +12,8 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');  // 비밀번호 해시를 위한 패키지 
 require('dotenv').config({ path: '../.env' });
 const SECRET_KEY = process.env.SECRET_KEY;
+const multer = require('multer');
+const path = require('path');
 
 
 app.use(cors());
@@ -428,6 +430,30 @@ app.post('/silent-refresh', (req, res) => {
       res.json({ accessToken: newToken });
     });
   });
+});
+
+// 파일 저장 설정
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    // 파일 저장 경로를 'public/assets/pimage'로 수정
+    cb(null, path.join(__dirname, '../public/assets/pimage'));
+  },
+  filename: function (req, file, cb) {
+    // 저장할 파일명 설정
+    cb(null, Date.now() + path.extname(file.originalname));
+  }
+});
+
+// multer 설정
+const upload = multer({ storage: storage });
+
+// 파일 업로드 라우팅
+app.post('/api/upload', upload.single('image'), (req, res) => {
+  if (req.file) {
+    res.json({ success: true, file: req.file });
+  } else {
+    res.json({ success: false });
+  }
 });
 
 // 서버 시작
