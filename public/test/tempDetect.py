@@ -67,6 +67,7 @@ def temperature_detect(image_path):
         # Crop image 
         tmp_image = image[y:y+crop_height, x:x+crop_width]
         file_result = "result-{}_crop.jpg".format(i)
+        print(f"Image path: {image_path}")
         cv2.imwrite(file_result, tmp_image)
 
         # Fine Hexagon 

@@ -6,7 +6,7 @@ const fs = require('fs');
 const chokidar = require('chokidar');
 const { exec } = require('child_process');
 const app = express();
-const PORT = process.env.PORT || 4001;
+const PORT = process.env.PORT || 4001; 
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');  // 비밀번호 해시를 위한 패키지 
@@ -14,11 +14,32 @@ require('dotenv').config({ path: '../.env' });
 const SECRET_KEY = process.env.SECRET_KEY;
 const multer = require('multer');
 const path = require('path');
+const Jimp = require('jimp');
 
 
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+
+
+const pythonProcess = spawn('python3', ['/home/ubuntu/WorkSpace/CTA_Web_Project/public/test/tempDetect_copy.py', '/path/to/image.jpg']);
+
+pythonProcess.stdout.on('data', (data) => {
+  console.log(`stdout: ${data}`);
+});
+
+pythonProcess.stderr.on('data', (data) => {
+  console.error(`stderr: ${data}`);
+});
+
+pythonProcess.on('close', (code) => {
+  console.log(`child process exited with code ${code}`);
+});
+
+
+
+
 
 let colorDetectResult = '0'; // colorDetect.py의 결과를 저장할 변수를 선언
 let mcName = '';               // 설비명 저장
@@ -34,7 +55,7 @@ watcher
     console.log(`File ${path} has been added`);
 
     setTimeout(() => {
-      const command1 = `python3 /home/ubuntu/WorkSpace/CTA_Web_Project/public/test/tempDetect.py ${path}`;
+      const command1 = `python3 /home/ubuntu/WorkSpace/CTA_Web_Project/public/test/tempDetect_copy.py ${path}`;
       exec(command1, (error, stdout, stderr) => {
         if (error) {
           console.log(`Error: ${error.message}`);
@@ -85,7 +106,7 @@ watcher
           });
         });
       });
-    }, 3000); // 3초 후에 실행
+    }, 5000); // 5초 후에 실행
   })
   .on('error', error => console.log(`Watcher error: ${error}`));
 
@@ -432,28 +453,84 @@ app.post('/silent-refresh', (req, res) => {
   });
 });
 
-// 파일 저장 설정
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    // 파일 저장 경로를 'public/assets/pimage'로 수정
-    cb(null, path.join(__dirname, '../public/assets/pimage'));
-  },
-  filename: function (req, file, cb) {
-    // 저장할 파일명 설정
-    cb(null, Date.now() + path.extname(file.originalname));
-  }
-});
+// // 파일 저장 설정
+// const storage = multer.diskStorage({
+//   destination: function (req, file, cb) {
+//     // 파일 저장 경로를 'public/assets/pimage'로 수정
+//     cb(null, path.join(__dirname, '../public/assets/pimage'));
+//   },
+//   filename: function (req, file, cb) {
+//     // 현재 시간을 가져옴
+//     const now = new Date();
+//     now.setHours(now.getHours() + 9); // 한국 시간으로 조정, 기존에는 UTC로 설정되어 있음
+//     const year = now.getFullYear();
+//     const month = now.getMonth() + 1;
+//     const day = now.getDate();
+//     const hour = now.getHours();
+//     const minute = now.getMinutes();
+//     const second = now.getSeconds();
 
-// multer 설정
-const upload = multer({ storage: storage });
+//     // 시간을 2자리 숫자로 변환
+//     const formatted = `${year}_${month.toString().padStart(2, '0')}_${day.toString().padStart(2, '0')}_${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:${second.toString().padStart(2, '0')}`;
 
-// 파일 업로드 라우팅
-app.post('/api/upload', upload.single('image'), (req, res) => {
-  if (req.file) {
-    res.json({ success: true, file: req.file });
-  } else {
-    res.json({ success: false });
-  }
+//     // 파일명 설정
+//     cb(null, `photo_${formatted}${path.extname(file.originalname)}`);
+//   }
+// });
+
+// // multer 설정
+// const upload = multer({
+//   storage: storage,
+//   limits: {
+//     fileSize: 50 * 1024 * 1024, // 5MB
+//   },
+// });
+
+// // 파일 업로드 라우팅
+// app.post('/api/upload', upload.single('image'), (req, res) => {
+//   if (req.file) {
+//     res.json({ success: true, file: req.file });
+//   } else {
+//     res.json({ success: false });
+//   }
+// });
+
+const upload = multer();
+
+app.post('/api/upload', upload.single('image'), async (req, res) => {
+  const buffer = req.file.buffer;
+  
+  // 파일 이름 생성
+  const now = new Date();
+  now.setHours(now.getHours() + 9); // 한국 시간으로 조정, 기존에는 UTC로 설정되어 있음
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
+  const hour = now.getHours();
+  const minute = now.getMinutes();
+  const second = now.getSeconds();
+
+  // 시간을 2자리 숫자로 변환
+  const formatted = `${year}_${month.toString().padStart(2, '0')}_${day.toString().padStart(2, '0')}_${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:${second.toString().padStart(2, '0')}`;
+
+  // 파일 경로 설정
+  const filePath = path.join(__dirname, '../public/assets/pimage', `photo_${formatted}.jpg`);
+
+  // Jimp를 사용하여 이미지 크기 변경
+  const resizedBuffer = await Jimp.read(buffer)
+    .then(image => image.resize(800, Jimp.AUTO, Jimp.RESIZE_BICUBIC)) // 가로 크기 800에 맞춤
+    .then(image => image.getBufferAsync(Jimp.AUTO));
+
+  // 파일 저장
+  fs.writeFile(filePath, resizedBuffer, function(err) {
+    if (err) {
+      console.error('이미지 저장 오류:', err);
+      res.json({ success: false });
+    } else {
+      console.log('이미지가 성공적으로 저장되었습니다.');
+      res.json({ success: true, file: filePath });
+    }
+  });
 });
 
 // 서버 시작

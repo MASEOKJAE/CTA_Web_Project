@@ -56,7 +56,7 @@ const StateHistoryPage = () => {
     // FormData를 사용하여 파일 데이터를 서버로 전송
     const formData = new FormData();
     formData.append('image', target.files[0]);
-  
+
     fetch('/api/upload', {
       method: 'POST',
       body: formData,
@@ -69,7 +69,7 @@ const StateHistoryPage = () => {
       console.error(error);
     });
   };
-  
+
   return (
     <>
       <Helmet>
