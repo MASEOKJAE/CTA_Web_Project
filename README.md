@@ -43,7 +43,7 @@ npm start # or yarn start
 
 ### 1. **Set up an AWS EC2 Instance:**
 
-<img width="450" alt="AWS EC2 Setup" src="https://github.com/user-attachments/assets/5c8c7e78-40c9-4b72-8609-93468fd07d4e" />
+<img width=60% alt="AWS EC2 Setup" src="https://github.com/user-attachments/assets/5c8c7e78-40c9-4b72-8609-93468fd07d4e" />
 
 - **Create an instance:** For example, name it CTA_Project.
 - **Start and run the instance:** Follow the steps to initialize and access your instance.
@@ -72,19 +72,19 @@ Access the service by navigating to: http://52.78.24.85:3000/
 
 ### 5. **Main Home Screen:**
 
-<img width="450" alt="Main Home Screen" src="https://github.com/user-attachments/assets/2beea255-5ea6-4532-b425-e17ec2145142" />
+<img width=70% alt="Main Home Screen" src="https://github.com/user-attachments/assets/2beea255-5ea6-4532-b425-e17ec2145142" />
 
 - Register new equipment using the 'Add Equipment' button. 🆕
 
 ### 6. **Modify or Delete Equipment Information:**
 
-<img width="450" alt="Edit Delete Equipment" src="https://github.com/user-attachments/assets/bb43ac1b-b2a1-46ae-b41b-351eeb6b31da" />
+<img width=70% alt="Edit Delete Equipment" src="https://github.com/user-attachments/assets/bb43ac1b-b2a1-46ae-b41b-351eeb6b31da" />
 
 - Use the 'Edit' and 'Delete' buttons to modify or remove existing equipment entries. ✏️🗑️
 
 ### 7. **Manage Repair History and Check Equipment Status:**
 
-<img width="450" alt="Equipment Status" src="https://github.com/user-attachments/assets/114bf568-a5cc-4645-8c0a-26835b4ed143" />
+<img width=70% alt="Equipment Status" src="https://github.com/user-attachments/assets/114bf568-a5cc-4645-8c0a-26835b4ed143" />
 
 - Manage repair history and monitor equipment status, captured via Raspberry Pi camera module. 📋
 
@@ -94,11 +94,10 @@ Access the service by navigating to: http://52.78.24.85:3000/
 - **Connect Server via Visual Studio Code:**
 Visual Studio Code remote connection setup:
     - **Refer to this guide for remote connection methods and configurations.**
-
-      https://velog.io/@maasj/Mac-AWS%EC%99%80-VS-Code-%EC%9B%90%EA%B2%A9-%EC%A0%91%EC%86%8D-%EB%B0%A9%EB%B2%95![image](https://github.com/user-attachments/assets/21f5ca9a-69c7-48cd-8433-df6f8b7b17fc)
+        - https://velog.io/@maasj/Mac-AWS%EC%99%80-VS-Code-%EC%9B%90%EA%B2%A9-%EC%A0%91%EC%86%8D-%EB%B0%A9%EB%B2%95
     - **Configure your VS Code as follows:**
       
-      <img width="450" alt="VS Code Setup" src="https://github.com/user-attachments/assets/a133d359-49ef-4785-a338-fb1ca5d5f2c8" />
+      <img width=70% alt="VS Code Setup" src="https://github.com/user-attachments/assets/a133d359-49ef-4785-a338-fb1ca5d5f2c8" />
 
         - Host: CTAWeb
         - HostName: 52.78.24.85
